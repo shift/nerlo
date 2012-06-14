@@ -1,3 +1,5 @@
+-define(DEBUG, true).
+
 -define(TAG_OK, ok).
 -define(TAG_ERROR, error).
 -define(TAG_DATA, data).

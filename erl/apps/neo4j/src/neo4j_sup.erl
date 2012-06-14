@@ -8,7 +8,6 @@
 
 -author("Ingo Schramm").
 
--include("global.hrl").
 -include_lib("eunit/include/eunit.hrl").
 
 
@@ -18,7 +17,7 @@ start_link(Args) when is_list(Args) ->
 init(Args = [_|_]) ->
     ej_log:info("initializing supervisor '~p' with Args: ~w", [?MODULE, Args]),
     [SrvArgs|_] = Args,
-    Spec = 
+    Spec =
     {ok,{{one_for_one,10,10},
         [get_spec(SrvArgs)]
     }},
@@ -33,8 +32,8 @@ get_spec(SrvArgs) ->
         ,worker
         ,[neo4j]
         }.
-    
-    
+
+
 
 %% ----- TESTS -----
 

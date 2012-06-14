@@ -8,7 +8,6 @@
 
 -author("Ingo Schramm").
 
--include("global.hrl").
 -include_lib("eunit/include/eunit.hrl").
 
 
@@ -18,7 +17,7 @@ start_link(Args) when is_list(Args) ->
 init(Args = [_|_]) ->
     %log:info(self(), "initializing supervisor '~p' with Args: ~w", [?MODULE, Args]),
     [SrvArgs|_] = Args,
-    Spec = 
+    Spec =
     {ok,{{one_for_all,10,10},
         [get_log_spec()
         ,get_ej_spec(SrvArgs)
@@ -35,7 +34,7 @@ get_ej_spec(SrvArgs) ->
         ,worker
         ,[ej_srv]
         }.
-    
+
 get_log_spec() ->
     {ej_log
         ,{ej_log, start_link, []}
@@ -43,7 +42,7 @@ get_log_spec() ->
         ,5000
         ,worker
         ,[ej_log]
-        }.   
+        }.
 
 %% ----- TESTS -----
 

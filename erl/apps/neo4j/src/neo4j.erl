@@ -1,5 +1,5 @@
 %% @doc This is the Erlang API of the graph database.
-%% 
+%%
 %% @author Ingo Schramm
 
 -module(neo4j).
@@ -39,8 +39,7 @@
 
 -author("Ingo Schramm").
 
--include("global.hrl").
--include("ej.hrl").
+-include_lib("ej/include/ej.hrl").
 -include_lib("eunit/include/eunit.hrl").
 
 -define(HANDLER, {handler,graphdb}).
@@ -64,7 +63,7 @@ stop() ->
 % @doc Test whether a graph database is running.
 has_db() ->
     case ej_srv:call(?TAG_CALL, [?HANDLER,{call,has_db}]) of
-        {ok, Data} -> 
+        {ok, Data} ->
             case lists:keyfind(result,1,Data) of
                 false          -> false;
                 {result,Value} -> Value
@@ -75,7 +74,7 @@ has_db() ->
 % @doc Add a vertex.
 add_vertex() ->
     case ej_srv:call(?TAG_CALL, [?HANDLER,{call,add_vertex}]) of
-        {ok, Data} -> 
+        {ok, Data} ->
             case lists:keyfind(result,1,Data) of
                 false          -> {error, answer_has_no_id};
                 {result,Value} -> ?VERTEX(Value)
@@ -86,7 +85,7 @@ add_vertex() ->
 % @doc Delete a vertex.
 del_vertex(?VERTEX(Id)) ->
     case ej_srv:call(?TAG_CALL, [?HANDLER,{call,del_vertex},{id,Id}]) of
-        {ok, Data} -> 
+        {ok, Data} ->
             case lists:keyfind(result,1,Data) of
                 false          -> {error, answer_has_no_id};
                 {result,Value} -> Value
@@ -97,7 +96,7 @@ del_vertex(?VERTEX(Id)) ->
 % @doc Get the list of edges of a given vertex.
 vertex_get_edges(?VERTEX(Id)) ->
     case ej_srv:call(?TAG_CALL, [?HANDLER,{call,vertex_get_edges},{id,Id}]) of
-        {ok, Data} -> 
+        {ok, Data} ->
             case lists:keyfind(result,1,Data) of
                 false          -> {error, answer_has_no_content};
                 {result,Value} -> Value
@@ -106,8 +105,8 @@ vertex_get_edges(?VERTEX(Id)) ->
     end.
 
 % @doc Get the list of edges of a given type for a vertex.
-vertex_get_edges(V=?VERTEX(Id), Type) ->
-    [ E || E=?EDGE(EId,A,B,T) <- vertex_get_edges(V), T =:= Type ].
+vertex_get_edges(V=?VERTEX(_Id), Type) ->
+    [ E || E=?EDGE(_EId,_A,_B,T) <- vertex_get_edges(V), T =:= Type ].
 
 % @doc Get all vertices connected ith a given vertex.
 vertex_get_neighbourhood(V=?VERTEX(Id)) ->
@@ -147,7 +146,7 @@ add_edge(Va=?VERTEX(_A), Vb=?VERTEX(_B)) ->
 % @doc Delete an edge.
 del_edge(?EDGE(Id,_Type,_A,_B)) ->
     case ej_srv:call(?TAG_CALL, [?HANDLER,{call,del_edge},{id,Id}]) of
-        {ok, Data} -> 
+        {ok, Data} ->
             case lists:keyfind(result,1,Data) of
                 false          -> {error, answer_has_no_id};
                 {result,Value} -> Value
@@ -220,7 +219,7 @@ types() ->
 
 private_add_edge(?VERTEX(A), ?VERTEX(B), Type) ->
     case ej_srv:call(?TAG_CALL, [?HANDLER,{call,add_edge},{a,A},{b,B},{type,Type}]) of
-        {ok, Data} -> 
+        {ok, Data} ->
             case lists:keyfind(result,1,Data) of
                 false          -> {error, answer_has_no_id};
                 {result,Value} -> ?EDGE(Value,Type,A,B)
@@ -255,7 +254,7 @@ private_get_property(Type, Id, Key) ->
                                 ,{type,Type}
                                 ,{id,Id}
                                 ,{key,Key}]) of
-        {ok, Data} -> 
+        {ok, Data} ->
             case lists:keyfind(result,1,Data) of
                 false          -> {error, answer_has_no_result};
                 {result,Value} -> Value
@@ -268,7 +267,7 @@ private_get_properties(Type, Id) ->
                                 ,{call,get_properties}
                                 ,{type,Type}
                                 ,{id,Id}]) of
-        {ok, Data} -> 
+        {ok, Data} ->
             case lists:keyfind(result,1,Data) of
                 false          -> {error, answer_has_no_result};
                 {result,Value} -> Value
@@ -278,7 +277,7 @@ private_get_properties(Type, Id) ->
 
 private_info(Item) ->
     case ej_srv:call(?TAG_CALL, [?HANDLER,{call,info},{item,Item}]) of
-        {ok, Data} -> 
+        {ok, Data} ->
             case lists:keyfind(result,1,Data) of
                 false          -> {error, answer_has_no_id};
                 {result,Value} -> Value
@@ -293,7 +292,7 @@ private_index(Id, Key, Val, Op) ->
                                 ,{id,Id}
                                 ,{key,Key}
                                 ,{value,Val}]) of
-        {ok, Data} -> 
+        {ok, Data} ->
             case lists:keyfind(result,1,Data) of
                 false          -> {error, answer_has_no_result};
                 {result,Value} -> Value
@@ -303,12 +302,12 @@ private_index(Id, Key, Val, Op) ->
 
 get_other_nodes(Id,Edges) ->
     lists:map(
-        fun(?EDGE(EId,A,B,T))->
-            if 
+        fun(?EDGE(_EId,A,B,_T))->
+            if
                 A =:= Id -> ?VERTEX(B);
                 true     -> ?VERTEX(A)
             end
-        end, 
+        end,
         Edges).
 
 
@@ -324,4 +323,3 @@ stop_test() ->
     R = ?MODULE:stop(),
     ?assertEqual(R, ok),
     ej_srv:stop().
-

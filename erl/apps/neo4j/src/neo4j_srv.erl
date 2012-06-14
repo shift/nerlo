@@ -13,8 +13,7 @@
 
 -author("Ingo Schramm").
 
--include("global.hrl").
--include("ej.hrl").
+%%-include_lib("ej/include/ej.hrl").
 -include_lib("eunit/include/eunit.hrl").
 
 -define(DEFAULT_N, 0).
@@ -36,8 +35,8 @@ start(N) ->
     gen_server:start(?STARTSPEC, ?MODULE, #neo4j{n=N}, []).
 
 start_link() ->
-    start_link(?DEFAULT_N). 
-    
+    start_link(?DEFAULT_N).
+
 start_link(N) ->
     gen_server:start_link(?STARTSPEC, ?MODULE, #neo4j{n=N}, []).
 
@@ -48,7 +47,7 @@ stop() ->
 %% ------ GENERIC -----
 
 
-% @hidden    
+% @hidden
 init(S) ->
     S1 =
     case S#neo4j.worker of
@@ -58,7 +57,7 @@ init(S) ->
     ej_log:info("~w initialized with state ~w", [?MODULE, S1]),
     {ok,S1}.
 
-% @hidden     
+% @hidden
 handle_call(Msg,From,S) ->
     ej_log:warn("Cannot understand call from ~w: ~w", [From,Msg]),
     {reply, {error, unknown_msg}, S}.
@@ -76,12 +75,12 @@ handle_cast(Msg,S) ->
     {noreply, S}.
 
 % @hidden
-handle_info(Msg={From, ej_notify, start}, S) ->
+handle_info(Msg={_From, ej_notify, start}, S) ->
     ej_log:debug("got notification: ~p", [Msg]),
     timer:sleep(100),
     neo4j:start(),
     {noreply, S};
-handle_info(Msg={From, ej_notify, stop}, S) ->
+handle_info(Msg={_From, ej_notify, stop}, S) ->
     ej_log:debug("got notification: ~p", [Msg]),
     erlang:send_after(50, self(), {'STOP'}),
     {noreply, S};
@@ -96,12 +95,12 @@ handle_info(Msg,S) ->
     ej_log:info("info: ~p", [Msg]),
     {noreply,S}.
 
-% @hidden     
+% @hidden
 terminate(_Reason,S) ->
     {noreply, S}.
 
-% @hidden     
-code_change(_OldVsn, S, _Extra) -> 
+% @hidden
+code_change(_OldVsn, S, _Extra) ->
     {ok, S}.
 
 
@@ -113,15 +112,15 @@ start_worker(S) ->
 initialize(S) ->
     S1 =
     case catch(neo4j:start()) of
-        {'EXIT',Reason} -> 
+        {'EXIT',Reason} ->
             ej_log:error("starting neo4j failed: ~w", [Reason]),
             S;
-        Msg -> 
+        Msg ->
             ej_log:debug("~p", [Msg]),
             case neo4j:has_db() of
-                true  -> 
+                true  ->
                     S#neo4j{db=true};
-                false -> 
+                false ->
                     ej_log:error("no database available", []),
                     erlang:send_after(100, self(), {'STOP'}),
                     S#neo4j{db=false}
@@ -129,7 +128,7 @@ initialize(S) ->
     end,
     ej_srv:add_listener(self()),
     Workers =
-        lists:foldl(fun(_I,Acc) -> 
+        lists:foldl(fun(_I,Acc) ->
                             case start_worker(S1) of
                                 {ok,Pid} -> [Pid|Acc];
                                 _Any     -> Acc
@@ -149,10 +148,3 @@ shutdown(S) ->
 %%     ?assert(is_pid(Pid)),
 %%     stop(),
 %%     timer:sleep(500).
-
-
-
-
-
-
-  

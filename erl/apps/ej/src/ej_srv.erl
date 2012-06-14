@@ -1,9 +1,9 @@
 %% @doc This is the Erlang server maintaining connections
 %% to the hidden Java node.
-%% 
+%%
 %% This one is trapping exists. You should always use ej_srv:stop()
-%% to shutdown the server and the linked Java node. If the Java 
-%% node dies it will be restarted. 
+%% to shutdown the server and the linked Java node. If the Java
+%% node dies it will be restarted.
 %%
 %% To use this module in your code you should include ej.hrl.
 %%
@@ -26,13 +26,12 @@
 
 -author("Ingo Schramm").
 
--include("global.hrl").
 -include("ej.hrl").
 -include_lib("eunit/include/eunit.hrl").
 
 -ifdef(DEBUG).
 -export([bad/0]).
--endif. 
+-endif.
 
 -define(DEFAULT_N, erlang:system_info(schedulers_online) * 2).
 -define(SRVNAME, ?MODULE).
@@ -64,8 +63,8 @@ start(N,Bindir) ->
     gen_server:start(?STARTSPEC, ?MODULE, #ej{n=N,bindir=Bindir}, []).
 
 start_link() ->
-    start_link(?DEFAULT_N). 
-    
+    start_link(?DEFAULT_N).
+
 start_link(N) ->
     gen_server:start_link(?STARTSPEC, ?MODULE, #ej{n=N}, []).
 
@@ -83,7 +82,7 @@ send(Tag,Msg = [_|_]) ->
 % @doc Send a message to the peer and wait for an answer.
 % This runs with a default timeout of 10 seconds.
 call(Tag,Msg) ->
-    call(Tag,Msg,10).       
+    call(Tag,Msg,10).
 
 % @doc Send a message to the peer and wait for an answer.
 % After Timeout seconds {error,timeout} will be returned.
@@ -116,9 +115,9 @@ add_listener(Pid) when is_pid(Pid) ->
     application:set_env(ej, listeners, sets:add_element(Pid, Listeners)).
 
 % @doc Remove a listener process.
-del_listener(Pid) when is_pid(Pid) ->
-    {ok,Listeners} = application:get_env(ej, listeners),
-    application:set_env(ej, listeners, sets:del_element(Pid, Listeners)).
+%% del_listener(Pid) when is_pid(Pid) ->
+%%     {ok,Listeners} = application:get_env(ej, listeners),
+%%     application:set_env(ej, listeners, sets:del_element(Pid, Listeners)).
 
 % @doc Ping the peer. This will not use net_adm:ping but
 % the ej_srv message channel to the Java node to test this
@@ -133,7 +132,7 @@ restart_peer() ->
 %% ------ GENERIC -----
 
 
-% @hidden    
+% @hidden
 init(S) ->
     S1 =
     case S#ej.worker of
@@ -143,7 +142,7 @@ init(S) ->
     %ej_ej_log:info("~w initialized with state ~w", [?MODULE, S1]),
     {ok,S1}.
 
-% @hidden     
+% @hidden
 handle_call({send,Ref,Tag,Msg},From,S) ->
     {W, L} = f:lrot(S#ej.workers),
     gen_server:cast(W,{send,From,Ref,Tag,Msg}),
@@ -157,7 +156,7 @@ handle_call({restart},_From,S) ->
         ok ->
             Peer = handshake(S#ej.bindir),
             {ok, populate_peer(Peer,S)};
-        _Any -> 
+        _Any ->
             {{error,shutdown},S}
     end,
     {reply, Reply, NewS};
@@ -199,7 +198,7 @@ handle_info({Port,{data,Msg}},S) when is_port(Port) ->
     ej_log:info("port says: ~p", [Msg]),
     {noreply,S};
 % ej_srv messages
-handle_info({From,notify_start}, S) ->
+handle_info({_From,notify_start}, S) ->
     notify_listeners(start),
     {noreply,S};
 handle_info({From,_Ref,{?TAG_OK,[?EJMSGPART(call,handshake)]}},S) ->
@@ -212,13 +211,13 @@ handle_info(Msg={'EXIT', Pid, Reason},S) ->
         true  -> S;
         false -> handle_exit(Msg,S)
     end,
-    {noreply, S1}; 
+    {noreply, S1};
 handle_info({'STOP'},S) ->
     case S#ej.worker of
-        yes -> 
+        yes ->
             ej_log:info("stopping with state: ~w", [S]),
             {stop, normal, S};
-        no  -> 
+        no  ->
             {noreply,S}
     end;
 % messages to be routed to client
@@ -241,12 +240,12 @@ handle_info(Msg,S) ->
     ej_log:info(self(),"info: ~p", [Msg]),
     {noreply,S}.
 
-% @hidden     
+% @hidden
 terminate(_Reason,S) ->
     {noreply, S}.
 
-% @hidden     
-code_change(_OldVsn, S, _Extra) -> 
+% @hidden
+code_change(_OldVsn, S, _Extra) ->
     {ok, S}.
 
 
@@ -263,15 +262,15 @@ initialize(S) ->
     process_flag(trap_exit, true),
     {ok,Cwd} = file:get_cwd(),
     timer:start(),
-    Bindir = 
-        if 
+    Bindir =
+        if
             S#ej.bindir =:= ?BINDIR -> Cwd;
             true                      -> S#ej.bindir
         end,
     % callbacks=ets:new(erlang:make_ref(),[])
     S2 = S#ej{peer=handshake(Bindir)},
     Workers =
-        lists:foldl(fun(_I,Acc) -> 
+        lists:foldl(fun(_I,Acc) ->
                             case start_worker(S2) of
                                 {ok,Pid} -> [Pid|Acc];
                                 _Any     -> Acc
@@ -290,11 +289,11 @@ handshake(Bindir) ->
     end,
     case send_ping(Pid) of
         pong  -> Pid;
-        Error -> 
+        Error ->
             ej_log:error("peer not reachable: ~w", [Error]),
             throw({peer_does_not_answer,Error})
     end.
-    
+
 quick_handshake(Peer) ->
     ej_log:info("quick handshake to: ~w", [Peer]),
     run_handshake(Peer).
@@ -324,12 +323,12 @@ port(Bindir) ->
 run_handshake(Peer) ->
     send_peer(Peer, Ref=get_ref(), ?TAG_NODE, [?EJMSGPART(call,handshake)]),
     receive
-        {From,Ref,{?TAG_OK,[?EJMSGPART(call,handshake)]}} -> 
+        {From,Ref,{?TAG_OK,[?EJMSGPART(call,handshake)]}} ->
             ej_log:info("got handshake from: ~w", [From]),
             erlang:link(From),
             {ok,From}
     after
-        ?BLOCKING_TIMEOUT -> 
+        ?BLOCKING_TIMEOUT ->
             ej_log:info("handshake timeout", []),
             {error,no_answer}
     end.
@@ -342,14 +341,14 @@ notify_listeners(What) ->
             ej_log:debug("About to send notification '~p' to listeners: ~p", [What,L2]),
             lists:map(
                 fun(Pid) -> Pid ! {self(), ej_notify, What} end, L2);
-        false -> 
+        false ->
             ej_log:error("not a set ~p", [Listeners])
     end.
 
 get_listeners() ->
     case application:get_env(listeners) of
         {ok, Ls} -> Ls;
-        Any      -> []
+        _Any      -> []
     end.
 
 shutdown(Peer,S) ->
@@ -360,7 +359,7 @@ shutdown(Peer,S) ->
 shutdown_peer(Peer) ->
     send_peer(Peer, Ref=get_ref(), ?TAG_NODE, [?EJMSGPART(call,shutdown)]),
     receive
-        {Peer,Ref,{?TAG_OK,[?EJMSGPART(call,bye)]}} -> 
+        {Peer,Ref,{?TAG_OK,[?EJMSGPART(call,bye)]}} ->
             ej_log:info("shutdown confirmed by peer", []),
             ok
     after
@@ -407,14 +406,14 @@ callback_loop(Ref, Fun) ->
         {_From, Ref, {?TAG_ERROR, [{result,?EJCALLBACKTIMEOUT}]}} ->
             {error, timeout};
         {_From, Ref, {?TAG_ERROR, Reason}} ->
-            {error,Reason};        
+            {error,Reason};
         Any ->
             {error, bogus_message_received, {self=Ref}, {answer=Any}}
     end.
 
 
 -ifdef(DEBUG).
-bad() -> 
+bad() ->
     gen_server:call(?SRVNAME, {bad}).
 -endif.
 
@@ -427,10 +426,3 @@ start_stop_test() ->
     ?assert(is_pid(Pid)),
     stop(),
     timer:sleep(500).
-
-
-
-
-
-
-  

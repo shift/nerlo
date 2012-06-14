@@ -13,11 +13,11 @@
 
 -author("Ingo Schramm").
 
--include("global.hrl").
+
 -include_lib("eunit/include/eunit.hrl").
 
 -record(state,
-       {verbosity = verbose 
+       {verbosity = verbose
        ,f         = fun(Who, Node, Level, Msg, Args) -> print_log({Who,Node}, Level, Msg, Args) end
        }).
 
@@ -38,7 +38,7 @@ error(Msg, Args) ->
     err(Msg, Args).
 err(Msg, Args) ->
     log(error, Msg, Args).
-    
+
 warning(Msg, Args) ->
     warn(Msg, Args).
 warn(Msg, Args) ->
@@ -51,7 +51,7 @@ debug(Msg, Args) ->
     log(debug, Msg, Args).
 
 % @doc Set a log server property.
-% 
+%
 % Avalable properties:
 % <pre>
 % verbosity      - silent | verbose
@@ -63,8 +63,8 @@ set(verbosity, silent) ->
 set(verbosity, verbose) ->
     gen_server:cast({global,?MODULE}, {set, {verbosity, verbose}}).
 
-% @doc Start the global log server. 
-% @spec start() -> {ok, Pid::pid()} | {error, Reason::any()}   
+% @doc Start the global log server.
+% @spec start() -> {ok, Pid::pid()} | {error, Reason::any()}
 start() ->
     start_link().
 
@@ -78,25 +78,25 @@ stop() ->
     gen_server:cast({global, ?MODULE},{'STOP'}),
     global:unregister_name(?MODULE).
 
-% @hidden 
+% @hidden
 init(State) ->
-    S1 = 
+    S1 =
         case has_log4erl() of
             true  ->
                 log4erl:add_file_appender(file, {"../log", "ej_erl", {size, 100000}, 4, "log", debug}),
-                log4erl:change_format(file1, "[%L] %j %T %l%n"), 
+                log4erl:change_format(file1, "[%L] %j %T %l%n"),
                 State#state{f = fun(Who, Node, Level, Msg, Args) -> log4(Who, Node, Level, Msg, Args) end};
             false -> State
         end,
     info("logger is working", []),
     {ok,S1}.
 
-% @hidden 
+% @hidden
 handle_call({Who, Level, Msg, Args},_From,State) ->
     log:print_log(Who, Level, Msg, Args),
     {noreply, State}.
 
-% @hidden 
+% @hidden
 handle_cast({Who, Node, Level, Msg, Args}, State) ->
     case State#state.verbosity of
         %verbose -> log:print_log({Who,Node}, Level, Msg, Args);
@@ -109,8 +109,8 @@ handle_cast({set, {K,V}},State) ->
     NewState =
     case K of
         verbosity -> State#state{verbosity = V};
-        _Any      -> State 
-    end, 
+        _Any      -> State
+    end,
     {noreply, NewState};
 handle_cast({'STOP'}, State) ->
     log:info(self(),"stopping with state: ~p", [State]),
@@ -119,19 +119,19 @@ handle_cast(Msg,State) ->
     log:print_log(self(), 'ERROR', "log_srv cannot understand: ~p", [Msg]),
     {noreply, State}.
 
-% @hidden 
+% @hidden
 handle_info(_Msg,State) ->
     {noreply, State}.
 
-% @hidden 
+% @hidden
 terminate(_Reason,State) ->
     {noreply, State}.
 
-% @hidden 
-code_change(_OldVsn, State, _Extra) -> 
+% @hidden
+code_change(_OldVsn, State, _Extra) ->
     {ok, State}.
 
-    
+
 %% ----- PRIVATE PARTS -----
 
 print_log(Who, Level, Msg, Args) ->
@@ -160,16 +160,3 @@ start_stop_test() ->
     start(),
     timer:sleep(100),
     stop().
-
-
-
-
-
-
-
-
-
-
-
-
-
