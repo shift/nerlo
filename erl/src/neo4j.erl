@@ -39,7 +39,7 @@
 
 -author("Ingo Schramm").
 
--include_lib("ej/include/ej.hrl").
+-include("ej.hrl").
 -include_lib("eunit/include/eunit.hrl").
 
 -define(HANDLER, {handler,graphdb}).

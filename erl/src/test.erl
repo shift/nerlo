@@ -6,7 +6,6 @@
 
 -export([test/0,erlang/0]).
 
--include("global.hrl").
 -include_lib("eunit/include/eunit.hrl").
 
 -author("Ingo Schramm").
@@ -26,5 +25,3 @@ test() ->
 
 erlang() ->
     rock_n_roll.
-
-
