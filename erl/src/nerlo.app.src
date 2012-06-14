@@ -1,11 +1,16 @@
-{application,nerlo,
+{application, nerlo,
     [{description, "Erlang Neo4j client"},
      {vsn,"0.0.1"},
-     {modules,[f,log,neo4j_app,neo4j_sup,neo4j_srv,neo4j]},
+     {modules, [
+       ej_log, ej_srv, ej_sup,
+       neo4j, neo4j_srv, neo4j_sup,
+       f
+     ]},
      {registered,[]},
-     {applications,[kernel,stdlib,ej]},
-     {env, [{key, value}
-           ]},
+     {applications,[kernel,stdlib]},
+     {env, [
+      {key, value}
+     ]},
      {mod,{nerlo_app,[]}}
     ]
 }.
