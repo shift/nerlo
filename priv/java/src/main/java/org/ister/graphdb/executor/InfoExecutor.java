@@ -39,13 +39,13 @@ public class InfoExecutor extends AbstractGraphdbMsgExecutor {
 	protected String getId() {
 		return "info";
 	}
-	
+
 	private Object info(String item) {
 		Object info = null;
-		
+
         GraphDbModule mod = ((EmbeddedGraphDatabase)this.db).getConfig().getGraphDbModule();
         NodeManager nm = mod.getNodeManager();
-		
+
 		Transaction tx = this.db.beginTx();
 		try {
 			if (item.equals("order")) {
