@@ -10,10 +10,12 @@ start_link(Args) when is_list(Args) ->
 
 init(_Args) ->
     Spec =
-    {ok,{{one_for_one,10,10},
-        [get_spec(ej_sup, []), get_spec(neo4j_sup, [])]
-    }},
+    {ok,{{one_for_one,10,10}, [
+         get_spec(ej_log, []),
+         get_spec(ej_srv, []),
+         get_spec(neo4j_srv, [])
+    ]}},
     Spec.
 
 get_spec(Sup, Args) ->
-    {Sup ,{Sup, start_link, Args}, permanent, 5000, supervisor, []}.
+    {Sup ,{Sup, start_link, Args}, permanent, 5000, worker, []}.

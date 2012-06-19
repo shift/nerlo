@@ -9,20 +9,37 @@ ej.msgHandler=org.ister.nerlo.EjMsgHandler
 # graphdb
 graphdb.db.path=../db
 
-# log4j properties
-log4j.rootLogger=debug, R
+## log4j properties
+#log4j.rootLogger=debug, R
+#
+## log4j.appender.stdout=org.apache.log4j.ConsoleAppender
+## log4j.appender.stdout.layout=org.apache.log4j.PatternLayout
+## log4j.appender.stdout.layout.ConversionPattern=%d [%t] %-5p - %m%n
+#
+#log4j.appender.R=org.apache.log4j.RollingFileAppender
+#log4j.appender.R.File=../log/ej.log
+#log4j.appender.R.layout=org.apache.log4j.PatternLayout
+#log4j.appender.R.layout.ConversionPattern=%d [%t] %-5p - %m%n
+#log4j.appender.R.MaxFileSize=1024KB
+#log4j.appender.R.MaxBackupIndex=1
 
-# log4j.appender.stdout=org.apache.log4j.ConsoleAppender
-# log4j.appender.stdout.layout=org.apache.log4j.PatternLayout
-# log4j.appender.stdout.layout.ConversionPattern=%d [%t] %-5p - %m%n
+# rolling file appender
+log4j.appender.file=org.apache.log4j.RollingFileAppender
+log4j.appender.file.file=log/nerlo.log
+log4j.appender.file.maxFileSize=10MB
+log4j.appender.file.maxBackupIndex=1
+log4j.appender.file.layout=org.apache.log4j.PatternLayout
+log4j.appender.file.layout.ConversionPattern=%5p | %d | %F:%L | %m%n
 
-log4j.appender.R=org.apache.log4j.RollingFileAppender
-log4j.appender.R.File=../log/ej.log
-log4j.appender.R.layout=org.apache.log4j.PatternLayout
-log4j.appender.R.layout.ConversionPattern=%d [%t] %-5p - %m%n
-log4j.appender.R.MaxFileSize=1024KB
-log4j.appender.R.MaxBackupIndex=1
+# console appender
+log4j.appender.console=org.apache.log4j.ConsoleAppender
+#log4j.appender.console.Threshold = INFO
+log4j.appender.console.target=System.out
+log4j.appender.console.layout=org.apache.log4j.PatternLayout
+log4j.appender.console.layout.ConversionPattern=%d{yy/MM/dd HH:mm:ss} %p %c{2}: %m%n
 
+# select output destination and default logging levels
+log4j.rootLogger=info,file,console
 
-
-
+# set log level a bit higher
+log4j.logger.org.ister=debug

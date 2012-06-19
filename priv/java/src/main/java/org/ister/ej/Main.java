@@ -17,39 +17,57 @@ import org.apache.log4j.PropertyConfigurator;
 public class Main {
 
 	private final String[] args;
-	private final String pwd = System.getProperty("user.dir");
-	
+	private String bindir = ".";
 	private String sname  = "jnode";
 	private String cookie = "123456";
 	private String peer   = "shell";
 	private String handlerClass = "org.ister.ej.SimpleMsgHandler";
-	private String propf  = pwd + "/properties";
-	
+	private String propf  = bindir + "/properties";
+
 	private static Node NODE = null;
 	private static Properties PROPERTIES = null;
-	
+
 	private static final String VERSION = "0.0.1-alpha";
 	private static final String NAME = "nerlo";
-	
-	private static final Logger LOG = Logger.getRootLogger();
-	
+
+	private static Logger log;
+
 	private Main(String[] args) {
+		log = Logger.getLogger(this.getClass());
+		log.debug("args:");
+		log.debug(args);
 		this.args = args;
 	}
-	
+
 	/**
 	 * Run the program.
-	 * 
+	 *
 	 * @throws Exception
 	 */
 	public void run() throws Exception {
-	    parseOptions(this.args);
+	    log.debug("propf: " + this.propf);
+		parseOptions(this.args);
 	    initProps(this.propf);
-	    LOG.info("---- Main initialized");
-        NODE = Node.getInstance(sname, peer, PROPERTIES);
-        NODE.run();		
+	    log.info("---- Main initialized");
+	    NODE = Node.getInstance(sname, peer, PROPERTIES);
+	    //NODE = Node.getInstance(fqn(sname), fqn(peer), PROPERTIES);
+	    new Thread(NODE).start();
 	}
-	
+
+	private String fqn(String node) {
+		try {
+			node = node + "@" +
+				java.net.InetAddress.getLocalHost().getHostName();
+		} catch (Exception e) {
+			log.error("bad hostname juju");
+			e.printStackTrace();
+		}
+		if( node.endsWith(".local")) {
+			node = node.substring(0, node.length()-6);
+		}
+		return node;
+	}
+
 	private void parseOptions(String[] args) {
 	    CommandLineParser parser = new GnuParser();
 	    try {
@@ -60,7 +78,7 @@ public class Main {
 	        System.out.println( "Parsing command line failed.  Reason: " + e.getMessage() );
 	    }
 	}
-	
+
 	private void processCommandLine(CommandLine line, Options options) {
         if (line.hasOption("help")) {
             HelpFormatter formatter = new HelpFormatter();
@@ -71,7 +89,7 @@ public class Main {
         if (line.hasOption("version")) {
             printBanner();
             System.exit(0);
-        }        
+        }
         if (line.hasOption("sname")) {
             this.sname = line.getOptionValue("sname");
         }
@@ -88,14 +106,14 @@ public class Main {
             this.handlerClass = line.getOptionValue("handlerClass");
         }
 	}
-	
+
 	private void printBanner() {
 	    System.out.println(NAME + " version " + VERSION);
 	}
-	
+
 	@SuppressWarnings("static-access")
     private Options getOptions() {
-	    
+
 	    Option help = new Option("help", "print this message");
 	    Option version = new Option("version", "print the version information and exit");
 	    Option sname = OptionBuilder.withArgName("sname")
@@ -118,7 +136,7 @@ public class Main {
 					.hasArg()
 			        .withDescription("give class of message handler")
 			        .create("handlerClass");
-	    
+
 	    Options options = new Options();
 	    options.addOption(help);
 	    options.addOption(version);
@@ -129,7 +147,7 @@ public class Main {
 	    options.addOption(hdClass);
 	    return options;
 	}
-	
+
 	private void initProps(String path) throws IOException {
 		PROPERTIES = new Properties();
 		try {
@@ -148,9 +166,9 @@ public class Main {
 			}
 		}
 	}
-	
+
 	/**
-	 * 
+	 *
 	 * @return
 	 * @throws IllegalStateException
 	 */
@@ -160,32 +178,36 @@ public class Main {
 		}
 		return NODE;
 	}
-	
+
 	/**
-	 * 
+	 *
 	 * @param key
 	 * @param def
 	 * @return
 	 */
 	public static String getProperty(String key, String def) {
-		if (PROPERTIES == null) {
+		return getProperty(PROPERTIES, key, def);
+	}
+
+	public static String getProperty(Properties props, String key, String def) {
+		if (props == null) {
 			throw new IllegalStateException("Properties not initialized");
 		}
-		return PROPERTIES.getProperty(key, def);		
+		return props.getProperty(key, def);
 	}
-	
-    
+
+
     /**
      * Get the application logger.
-     * 
+     *
      * @return
      */
     public static Logger getLogger() {
-    	return LOG;
+    	return log;
     }
-	
+
 	/* MAIN */
-	
+
 	/**
 	 * Main
 	 */
@@ -193,7 +215,7 @@ public class Main {
         Main main = new Main(args);
         main.run();
     }
-    
-    
+
+
 
 }

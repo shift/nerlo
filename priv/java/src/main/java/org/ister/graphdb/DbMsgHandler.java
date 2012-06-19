@@ -10,20 +10,26 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
 import org.apache.log4j.Logger;
-
 import org.ister.ej.AbstractMsgHandler;
+import org.ister.ej.ConcurrencyUtil;
 import org.ister.ej.Main;
 import org.ister.ej.Msg;
 import org.ister.ej.MsgTag;
 import org.ister.ej.Node;
-import org.ister.ej.ConcurrencyUtil;
-import org.ister.graphdb.executor.*;
-import org.ister.nerlo.Fiber;
-
+import org.ister.graphdb.executor.AbstractGraphdbMsgExecutor;
+import org.ister.graphdb.executor.AddEdgeExecutor;
+import org.ister.graphdb.executor.AddVertexExecutor;
+import org.ister.graphdb.executor.DelEdgeExecutor;
+import org.ister.graphdb.executor.DelPropertyExecutor;
+import org.ister.graphdb.executor.DelVertexExecutor;
+import org.ister.graphdb.executor.GetPropertiesExecutor;
+import org.ister.graphdb.executor.GetPropertyExecutor;
+import org.ister.graphdb.executor.IndexExecutor;
+import org.ister.graphdb.executor.InfoExecutor;
+import org.ister.graphdb.executor.SetPropertyExecutor;
+import org.ister.graphdb.executor.VertexGetEdgesExecutor;
 import org.neo4j.graphdb.GraphDatabaseService;
-import org.neo4j.graphdb.Transaction;
-import org.neo4j.index.IndexService;
-import org.neo4j.index.lucene.LuceneIndexService;
+import org.neo4j.graphdb.index.IndexManager;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
 
 public class DbMsgHandler extends AbstractMsgHandler {
@@ -33,20 +39,20 @@ public class DbMsgHandler extends AbstractMsgHandler {
 	@SuppressWarnings("unchecked")
 	private final HashMap<String, Class> map = new HashMap<String, Class>();
 	private final HashMap<String, AbstractGraphdbMsgExecutor> cache = new HashMap<String, AbstractGraphdbMsgExecutor>();
-	
+
 	private String path = null;
 	private GraphDatabaseService db = null;
-	private IndexService index = null;
+	private IndexManager index = null;
 	private final ExecutorService yielder = Executors.newSingleThreadExecutor();
-	
+
 	private final ExecutorService exec = Executors.newCachedThreadPool();
 	private final CompletionService<Msg> service = new ExecutorCompletionService<Msg>(this.exec);
-	
+
 	public void init(Node node) {
 		super.init(node);
-		
+
 		this.path = pwd + "/" + Main.getProperty("graphdb.db.path", "db");
-		
+		log.debug("db path: " + this.path);
 		this.map.put("add_vertex", AddVertexExecutor.class);
 		this.map.put("vertex_get_edges", VertexGetEdgesExecutor.class);
 		this.map.put("del_vertex", DelVertexExecutor.class);
@@ -58,7 +64,7 @@ public class DbMsgHandler extends AbstractMsgHandler {
 		this.map.put("get_properties", GetPropertiesExecutor.class);
 		this.map.put("info", InfoExecutor.class);
 		this.map.put("index", IndexExecutor.class);
-		
+
         // almost always shutdown database
 		final DbMsgHandler hdl = this;
         Runtime.getRuntime().addShutdownHook(
@@ -89,15 +95,15 @@ public class DbMsgHandler extends AbstractMsgHandler {
             }
         });
     	log.debug("yielder has been set");
-        
+
         log.info("initialized: " + this.getClass().toString());
 	}
-	
+
 	@Override
 	public void handle(Msg msg) {
 		Node node = getNode();
 		MsgTag tag = msg.getTag();
-		
+
     	if (tag.equals(MsgTag.CALL)) {
     		if (msg.match("call", "init")) {
     			Msg answer = null;
@@ -125,7 +131,7 @@ public class DbMsgHandler extends AbstractMsgHandler {
     		    node.sendPeer(answer);
     		    return;
     		} else if (msg.has("call")) {
-    			if (this.db == null || this.index == null) {
+    			if (this.db == null) { // || this.index == null
     				node.sendPeer(errorAnswer(msg, "no_db"));
     				return;
     			}
@@ -139,9 +145,9 @@ public class DbMsgHandler extends AbstractMsgHandler {
     				this.service.submit(ex);
     			}
     		    return;
-    		} 
+    		}
     	}
-    	
+
 		logUnhandledMsg(log, msg);
 	}
 
@@ -151,8 +157,8 @@ public class DbMsgHandler extends AbstractMsgHandler {
 		dbShutdown();
 		yielder.shutdown();
 	}
-	
-	
+
+
 	private AbstractGraphdbMsgExecutor getExecutor(String id) {
 		if (!cache.containsKey(id)) {
 			if (!map.containsKey(id)) {
@@ -175,29 +181,29 @@ public class DbMsgHandler extends AbstractMsgHandler {
 		}
 		return cache.get(id);
 	}
-	
+
 	private boolean dbInit(String path) {
 		if (this.db == null) {
 			return runDbInit(path);
 		}
 		return true;
 	}
-	
+
 	private boolean runDbInit(String path) {
 		try {
 			this.db = new EmbeddedGraphDatabase(path);
-			this.index = new LuceneIndexService(this.db);
+			//this.index = new LuceneIndexService(this.db);
 			log.info("graph database initialized: " + path);
 		} catch (Exception e) {
+			e.printStackTrace();
 			log.error("initialization of database failed: " + e.toString());
 			return false;
 		}
-		return true;		
+		return true;
 	}
-	
+
 	private void dbShutdown() {
-		if (this.index instanceof IndexService) {
-			this.index.shutdown();
+		if (this.index instanceof IndexManager) {
 			this.index = null;
 		}
 		if (this.db instanceof GraphDatabaseService) {

@@ -16,6 +16,7 @@ start() ->
     application:start(?APPNAME).
 
 stop() ->
+    ej_svr:stop(), %% will this get rid of jnode?
     application:stop(?APPNAME).
 
 start(Type, _Args) ->

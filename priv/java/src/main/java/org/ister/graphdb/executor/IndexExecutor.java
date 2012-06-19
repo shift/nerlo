@@ -1,7 +1,6 @@
 package org.ister.graphdb.executor;
 
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.Map;
 
 import org.ister.ej.Msg;
@@ -9,7 +8,9 @@ import org.ister.ej.MsgTag;
 import org.ister.nerlo.ExecutorException;
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.index.IndexHits;
+import org.neo4j.graphdb.index.IndexHits;
+
+// TODO: fix IndexService -> IndexManager change
 
 public class IndexExecutor extends AbstractGraphdbMsgExecutor {
 
@@ -36,21 +37,21 @@ public class IndexExecutor extends AbstractGraphdbMsgExecutor {
 	protected String getId() {
 		return "index";
 	}
-	
+
 	private Object lookup(String key, String value) throws ExecutorException {
 		long id = -1L;
 		Transaction tx = this.db.beginTx();
 		try {
-			IndexHits<org.neo4j.graphdb.Node> hits = this.index.getNodes(key, value);
-			if (hits.size() < 1) {
-				throw new ExecutorException("no_vertex_found");
-			} else if (hits.size() > 1) {
-				throw new ExecutorException("multiple_vertices_found");
-			}
-			id = hits.next().getId();
+//			IndexHits<org.neo4j.graphdb.Node> hits = this.index.getNodes(key, value);
+//			if (hits.size() < 1) {
+//				throw new ExecutorException("no_vertex_found");
+//			} else if (hits.size() > 1) {
+//				throw new ExecutorException("multiple_vertices_found");
+//			}
+//			id = hits.next().getId();
 			tx.success();
-		} catch (ExecutorException e) {
-			throw e;
+//		} catch (ExecutorException e) {
+//			throw e;
 		} catch (Exception e) {
 			log.error("could not operate on index: " + e.toString());
 			tx.failure();
@@ -60,15 +61,15 @@ public class IndexExecutor extends AbstractGraphdbMsgExecutor {
 		}
 		return new Long(id);
 	}
-	
+
 	private void op(Long id, String Key, String Value, String op) throws ExecutorException {
 		Transaction tx = this.db.beginTx();
 		try {
 			org.neo4j.graphdb.Node node = this.db.getNodeById(id.longValue());
 			if (op.equals("add")) {
-				this.index.index(node, Key, Value);
+				//this.index.index(node, Key, Value);
 			} else if (op.equals("del")) {
-				this.index.removeIndex(node, Key, Value);
+				//this.index.removeIndex(node, Key, Value);
 			}
 			tx.success();
 		} catch (NotFoundException e) {

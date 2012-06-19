@@ -4,15 +4,11 @@ SCRIPT_DIR="`dirname \"${0}\"`"
 SCRIPT_DIR="`( cd \"${SCRIPT_DIR}\" && pwd )`"
 cd ${SCRIPT_DIR}
 
-. ./setup.inc
-
-export ERL_HOME
-export JAVA_HOME
 export ERL_CRASH_DUMP=${SCRIPT_DIR}/erl_crash.dump
 
-LOG4ERL=../priv/log4erl-0.9.0/ebin
+LOG4ERL=${SCRIPT_DIR}/deps/log4erl/ebin
 
-ERL=${ERL_HOME}/bin/erl
+ERL=erl
 ERL_FLAGS="+K true +S 1:1 -pa ${SCRIPT_DIR}/../ebin -pz ${LOG4ERL} -setcookie `cat ${SCRIPT_DIR}/cookie`"
 
 NAME="shell"
@@ -20,4 +16,3 @@ NAME="shell"
 CMD="${ERL} ${ERL_FLAGS} -sname ${NAME}"
 echo $CMD
 $CMD
-

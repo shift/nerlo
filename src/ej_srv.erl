@@ -45,7 +45,7 @@
 -record(ej, {workers           = []
             ,worker            = no
             ,n                 = 0
-            ,peer              = null
+            ,peer              = ?PEERNAME
             ,bindir            = ?BINDIR
             ,stopping          = false
             ,callbacks         = null
@@ -134,6 +134,7 @@ restart_peer() ->
 
 % @hidden
 init(S) ->
+    application:set_env(ej, listeners, sets:new()),
     S1 =
     case S#ej.worker of
         yes -> S;
@@ -301,7 +302,7 @@ quick_handshake(Peer) ->
 % TODO we should retry handshake after opening port
 % for at least 3 times to allow first JVM startup ever
 % to be a little slower (not yet cached in the OS)
-full_handshake(Peer,Bindir) ->
+full_handshake(Peer, Bindir) ->
     ej_log:info("full handshake to: ~w", [Peer]),
     port(Bindir),
     timer:sleep(500),
