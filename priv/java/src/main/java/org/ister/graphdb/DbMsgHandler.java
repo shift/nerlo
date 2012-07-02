@@ -195,7 +195,6 @@ public class DbMsgHandler extends AbstractMsgHandler {
 			//this.index = new LuceneIndexService(this.db);
 			log.info("graph database initialized: " + path);
 		} catch (Exception e) {
-			e.printStackTrace();
 			log.error("initialization of database failed: " + e.toString());
 			return false;
 		}

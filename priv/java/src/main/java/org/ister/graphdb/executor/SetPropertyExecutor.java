@@ -13,7 +13,7 @@ public class SetPropertyExecutor extends AbstractGraphdbMsgExecutor {
 
 	private final static String VERTEX = "vertex";
 	private final static String EDGE = "edge";
-	
+
 	@Override
 	protected boolean checkMsg(Msg msg) {
 		return (msg.has("id") && msg.has("type") && msg.has("key") && msg.has("value"));
@@ -34,7 +34,7 @@ public class SetPropertyExecutor extends AbstractGraphdbMsgExecutor {
 	protected String getId() {
 		return "set_property";
 	}
-	
+
 	private boolean set(String type, Long id, String name, Object value) {
 		boolean success = false;
 		Transaction tx = this.db.beginTx();

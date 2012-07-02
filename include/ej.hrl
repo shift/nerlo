@@ -1,5 +1,7 @@
 -define(DEBUG, true).
 
+-define(APP, nerlo).
+
 -define(TAG_OK, ok).
 -define(TAG_ERROR, error).
 -define(TAG_DATA, data).

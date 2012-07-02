@@ -13,7 +13,7 @@
 
 -author("Ingo Schramm").
 
-
+-include("ej.hrl").
 -include_lib("eunit/include/eunit.hrl").
 
 -record(state,
@@ -83,8 +83,9 @@ init(State) ->
     S1 =
         case has_log4erl() of
             true  ->
-                log4erl:add_file_appender(file, {"../log", "ej_erl", {size, 100000}, 4, "log", debug}),
-                log4erl:change_format(file1, "[%L] %j %T %l%n"),
+                %% log4erl:add_file_appender(file, {"../log", "ej_erl", {size, 100000}, 4, "log", debug}),
+                %% log4erl:change_format(file1, "[%L] %j %T %l%n"),
+                log4erl:conf(code:priv_dir(?APP) ++ "/log4erl.conf"),
                 State#state{f = fun(Who, Node, Level, Msg, Args) -> log4(Who, Node, Level, Msg, Args) end};
             false -> State
         end,

@@ -4,7 +4,7 @@
      {modules, [
        ej_log, ej_srv, ej_sup,
        neo4j, neo4j_srv, neo4j_sup,
-       f
+       f, nerlo_util
      ]},
      {registered,[]},
      {applications,[kernel,stdlib]},

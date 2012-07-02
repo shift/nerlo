@@ -50,22 +50,8 @@ public class Main {
 	    initProps(this.propf);
 	    log.info("---- Main initialized");
 	    NODE = Node.getInstance(sname, peer, PROPERTIES);
-	    //NODE = Node.getInstance(fqn(sname), fqn(peer), PROPERTIES);
+	    //NODE = Node.getInstance(fqn(name), fqn(peer), PROPERTIES);
 	    new Thread(NODE).start();
-	}
-
-	private String fqn(String node) {
-		try {
-			node = node + "@" +
-				java.net.InetAddress.getLocalHost().getHostName();
-		} catch (Exception e) {
-			log.error("bad hostname juju");
-			e.printStackTrace();
-		}
-		if( node.endsWith(".local")) {
-			node = node.substring(0, node.length()-6);
-		}
-		return node;
 	}
 
 	private void parseOptions(String[] args) {

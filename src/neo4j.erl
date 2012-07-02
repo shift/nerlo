@@ -118,6 +118,10 @@ vertex_get_neighbourhood(V=?VERTEX(Id), Type) ->
     get_other_nodes(Id,vertex_get_edges(V, Type)).
 
 % @doc Set a property at a vertex.
+vertex_set_property(V, Key, Val) when not is_atom(Key) ->
+    vertex_set_property(V, nerlo_util:to_atom(Key), Val);
+vertex_set_property(V, Key, Val) when not is_binary(Val) ->
+    vertex_set_property(V, Key, nerlo_util:to_bin(Key));
 vertex_set_property(?VERTEX(Id), Key, Val) ->
     private_set_property(vertex, Id, Key, Val).
 

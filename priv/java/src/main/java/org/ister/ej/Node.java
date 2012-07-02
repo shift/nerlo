@@ -72,7 +72,8 @@ public class Node implements Runnable {
 	 * @return
 	 * @throws IOException
 	 */
-	public static Node getInstance(String name, String peer, Properties props)  throws IOException {
+	public static Node getInstance(String name, String peer, Properties props)
+			throws IOException {
 		if (INSTANCE == null) {
 			INSTANCE = new Node(name, peer, props);
 		}
@@ -179,7 +180,7 @@ public class Node implements Runnable {
 
 
     private void processMsg(Msg msg) throws Exception {
-    	OtpErlangPid pid = msg.getFrom();
+//    	OtpErlangPid pid = msg.getFrom();
 		// TODO: why don't these log?
 //    	log.debug("pid.node(): " + pid.node());
 //    	log.debug("peernode  : " + this.peernode);

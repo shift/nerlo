@@ -17,6 +17,8 @@
 -module(ej_srv).
 -behaviour(gen_server).
 
+-define(FULL_HANDSHAKE_RETRIES, 1).
+
 % public interface
 -export([send/2, call/2, call/3, callback/3, add_listener/1, ping/0, restart_peer/0]).
 -export([start/0, start/1, start/2, start_link/0, start_link/1, start_link/2, stop/0]).
@@ -243,6 +245,8 @@ handle_info(Msg,S) ->
 
 % @hidden
 terminate(_Reason,S) ->
+    %% TODO: shut down port if it's still open (jnode)
+    %%       need ref to port in #state?
     {noreply, S}.
 
 % @hidden
@@ -261,11 +265,11 @@ start_worker(S) ->
 
 initialize(S) ->
     process_flag(trap_exit, true),
-    {ok,Cwd} = file:get_cwd(),
+    Default = code:priv_dir(?APP) ++ "/../bin",
     timer:start(),
     Bindir =
         if
-            S#ej.bindir =:= ?BINDIR -> Cwd;
+            S#ej.bindir =:= ?BINDIR -> Default;
             true                      -> S#ej.bindir
         end,
     % callbacks=ets:new(erlang:make_ref(),[])
@@ -299,16 +303,17 @@ quick_handshake(Peer) ->
     ej_log:info("quick handshake to: ~w", [Peer]),
     run_handshake(Peer).
 
-% TODO we should retry handshake after opening port
-% for at least 3 times to allow first JVM startup ever
-% to be a little slower (not yet cached in the OS)
-full_handshake(Peer, Bindir) ->
+full_handshake(Peer, BinDir) ->
+    full_handshake(Peer, BinDir, ?FULL_HANDSHAKE_RETRIES).
+
+full_handshake(Peer,_,0) -> Peer;
+full_handshake(Peer, BinDir, Attempts) ->
     ej_log:info("full handshake to: ~w", [Peer]),
-    port(Bindir),
+    port(BinDir),
     timer:sleep(500),
     case run_handshake(Peer) of
         {ok,From}         -> From;
-        {error,no_answer} -> Peer
+        {error,no_answer} -> full_handshake(Peer, BinDir, Attempts-1)
     end.
 
 port(Bindir) ->
