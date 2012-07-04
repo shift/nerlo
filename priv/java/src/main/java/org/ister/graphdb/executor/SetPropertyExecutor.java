@@ -24,7 +24,7 @@ public class SetPropertyExecutor extends AbstractGraphdbMsgExecutor {
 		if (set((String)msg.get("type"), (Long) msg.get("id"), (String)msg.get("key"), msg.get("value"))) {
 			Map<String, Object> map = new HashMap<String, Object>(1);
 			map.put("result", "ok");
-			return Msg.answer(node.getSelf(), MsgTag.OK, map, msg);
+			return Msg.answer(self, MsgTag.OK, map, msg);
 		} else {
 			throw new ExecutorException("could_not_set_property");
 		}

@@ -1,39 +1,43 @@
 package org.ister.ej;
 
-import java.util.ArrayList;
-import java.util.Map;
-import java.util.TreeMap;
 import java.util.List;
+import java.util.TreeMap;
 
-import org.apache.log4j.Logger;
-
-import com.ericsson.otp.erlang.*;
+import com.ericsson.otp.erlang.OtpErlangAtom;
+import com.ericsson.otp.erlang.OtpErlangBinary;
+import com.ericsson.otp.erlang.OtpErlangDouble;
+import com.ericsson.otp.erlang.OtpErlangInt;
+import com.ericsson.otp.erlang.OtpErlangList;
+import com.ericsson.otp.erlang.OtpErlangLong;
+import com.ericsson.otp.erlang.OtpErlangObject;
+import com.ericsson.otp.erlang.OtpErlangString;
+import com.ericsson.otp.erlang.OtpErlangTuple;
 
 
 /**
  * Transform from OtpErlangObject to Java object and vice versa.
- * 
+ *
  * @author ingo
  *
  */
 public class ErlangTransformer {
 
 	/**
-	 * String becomes atom.
+	 * String becomes string.
 	 * byte[] becomes binary.
 	 * Integer becomes int.
 	 * Long becomes int.
 	 * Double becomes float.
 	 * EjList, ArrayList becomes list.
 	 * EjMap, TreeMap becomes tuple; Integer keys meaning position.
-	 * 
+	 *
 	 * @param o
 	 * @return
 	 */
 	public OtpErlangObject fromJava(Object o) throws IllegalArgumentException {
-		
+
 		if (o instanceof String) {
-			return new OtpErlangAtom((String) o);
+			return new OtpErlangString((String) o);
 		} else if (o instanceof Boolean) {
 			return (o == Boolean.TRUE) ? new OtpErlangAtom("true") : new OtpErlangAtom("false");
 		} else if (o instanceof byte[]) {
@@ -61,10 +65,10 @@ public class ErlangTransformer {
 			}
 			return new OtpErlangTuple(seed);
 		}
-		
+
 		throw new IllegalArgumentException("cannot transform input class: " + o.getClass().getName());
 	}
-	
+
 	/**
 	 * Atom becomes String.
 	 * Binary becomes byte[].
@@ -72,12 +76,12 @@ public class ErlangTransformer {
 	 * Float becomes Double.
 	 * List becomes EjList.
 	 * Tuple becomes EjMap, key=position.
-	 * 
+	 *
 	 * Note: Since it seems not to be safe to distinguish
 	 * Strings from Lists we do not allow Strings. A String
 	 * will be handled as a List. Send Strings as Atoms or
 	 * Binaries.
-	 * 
+	 *
 	 * @param o
 	 * @return
 	 * @throws IllegalArgumentException
@@ -95,11 +99,11 @@ public class ErlangTransformer {
 		}  else if (o instanceof OtpErlangInt) {
 			return ((OtpErlangInt) o).longValue();
 		} else if (o instanceof OtpErlangLong) {
-			return ((OtpErlangLong) o).longValue();	
+			return ((OtpErlangLong) o).longValue();
 		} else if (o instanceof OtpErlangDouble) {
 			return ((OtpErlangDouble) o).doubleValue();
 		} else if (o instanceof OtpErlangString) {
-			return toJava(new OtpErlangList(((OtpErlangString) o).stringValue()));
+			return ((OtpErlangString) o).stringValue();
 		} else if (o instanceof OtpErlangList) {
 			EjList list = new EjListImpl(((OtpErlangList) o).arity());
 			for (OtpErlangObject x : ((OtpErlangList) o).elements()) {
@@ -114,8 +118,8 @@ public class ErlangTransformer {
 			}
 			return tuple;
 		}
-		
+
 		throw new IllegalArgumentException("cannot transform input class: " + o.getClass().getName());
 	}
-	
+
 }

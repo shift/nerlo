@@ -6,30 +6,50 @@ import java.util.Map;
 import org.ister.ej.Msg;
 import org.ister.ej.MsgTag;
 import org.ister.nerlo.ExecutorException;
+import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.index.Index;
 import org.neo4j.graphdb.index.IndexHits;
 
 // TODO: fix IndexService -> IndexManager change
 
 public class IndexExecutor extends AbstractGraphdbMsgExecutor {
 
+	public Index<Node> nodeIndex;
+
 	@Override
 	protected boolean checkMsg(Msg msg) {
-		return ((msg.has("op") && msg.has("id") && msg.has("key") && msg.has("value")));
+		return ((msg.has("op") &&
+				 msg.has("id") &&
+				 msg.has("key") &&
+				 msg.has("value")));
 	}
 
 	@Override
 	protected Msg execMsg(Msg msg) throws ExecutorException {
-		if (msg.get("op").equals("lookup")) {
-			Map<String, Object> map = Collections.singletonMap("result", lookup((String)msg.get("key"), (String)msg.get("value")));
-			return Msg.answer(node.getSelf(), MsgTag.OK, map, msg);
-		} else if (msg.get("op").equals("add") || msg.get("op").equals("del")) {
-			op((Long)msg.get("id"), (String)msg.get("key"), (String)msg.get("value"), (String)msg.get("op"));
-			Map<String, Object> map = Collections.singletonMap("result", (Object)"ok");
-			return Msg.answer(node.getSelf(), MsgTag.OK, map, msg);
+		String op =  (String)msg.get("op");
+		Long   id =  (Long)msg.get("id");
+		String key = (String)msg.get("key");
+		String val = (String)msg.get("value");
+
+		if( op.equals("lookup") || op.equals("lookup_one") ) {
+			Object result = null;
+			if( op.equals("lookup_one") ) {
+				result = lookupOne(key, val);
+			} else {
+				result = lookup(key, val);
+			}
+
+			Map<String, Object> map = Collections.singletonMap("result",result);
+			return Msg.answer(self, MsgTag.OK, map, msg);
+		} else if( op.equals("add") || op.equals("del") ) {
+			op( op, id, key, val );
+			Map<String, Object> map = Collections.singletonMap("result",
+					(Object)"ok");
+			return Msg.answer(self, MsgTag.OK, map, msg);
 		} else {
-			throw new RuntimeException("unknown operation: " + msg.get("op"));
+			throw new RuntimeException("unknown operation: " + op);
 		}
 	}
 
@@ -38,11 +58,21 @@ public class IndexExecutor extends AbstractGraphdbMsgExecutor {
 		return "index";
 	}
 
-	private Object lookup(String key, String value) throws ExecutorException {
+	private Object lookupOne(String key, String val) throws ExecutorException {
+		long id = -1L;
+		IndexHits<Node> hits = nodeIndex.get(key, val);
+		if( hits.size() < 1 )
+			throw new NotFoundException("no_vertex_found");
+		id = hits.getSingle().getId();
+		return new Long(id);
+	}
+
+	private Object lookup(String key, String val)
+			throws ExecutorException {
 		long id = -1L;
 		Transaction tx = this.db.beginTx();
 		try {
-//			IndexHits<org.neo4j.graphdb.Node> hits = this.index.getNodes(key, value);
+//			IndexHits<org.neo4j.graphdb.Node> hits = this.index.getNodes(key, val);
 //			if (hits.size() < 1) {
 //				throw new ExecutorException("no_vertex_found");
 //			} else if (hits.size() > 1) {
@@ -62,17 +92,19 @@ public class IndexExecutor extends AbstractGraphdbMsgExecutor {
 		return new Long(id);
 	}
 
-	private void op(Long id, String Key, String Value, String op) throws ExecutorException {
+	private void op(String op, Long id, String key, String val) throws ExecutorException {
+		log.debug("op id:" + id);
 		Transaction tx = this.db.beginTx();
 		try {
-			org.neo4j.graphdb.Node node = this.db.getNodeById(id.longValue());
+			Node node = this.db.getNodeById(id.longValue());
 			if (op.equals("add")) {
-				//this.index.index(node, Key, Value);
+				this.nodeIndex.add(node, key, val);
 			} else if (op.equals("del")) {
-				//this.index.removeIndex(node, Key, Value);
+				this.nodeIndex.remove(node, key, val);
 			}
 			tx.success();
 		} catch (NotFoundException e) {
+			e.printStackTrace();
 			tx.failure();
 			throw new ExecutorException("vertex_not_found");
 		} catch (Exception e) {

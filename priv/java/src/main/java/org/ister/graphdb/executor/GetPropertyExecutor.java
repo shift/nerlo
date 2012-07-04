@@ -13,7 +13,7 @@ public class GetPropertyExecutor extends AbstractGraphdbMsgExecutor {
 
 	private final static String VERTEX = "vertex";
 	private final static String EDGE = "edge";
-	
+
 	@Override
 	protected boolean checkMsg(Msg msg) {
 		return (msg.has("id") && msg.has("type") && msg.has("key"));
@@ -27,14 +27,14 @@ public class GetPropertyExecutor extends AbstractGraphdbMsgExecutor {
 		}
 		Map<String, Object> map = new HashMap<String, Object>(1);
 		map.put("result", property);
-		return Msg.answer(node.getSelf(), MsgTag.OK, map, msg);
+		return Msg.answer(self, MsgTag.OK, map, msg);
 	}
 
 	@Override
 	protected String getId() {
 		return "get_property";
 	}
-	
+
 	private Object get(String type, Long id, String name) throws ExecutorException {
 		Object property = null;
 		Transaction tx = this.db.beginTx();

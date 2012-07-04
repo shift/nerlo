@@ -169,7 +169,7 @@ public class DbMsgHandler extends AbstractMsgHandler {
 				@SuppressWarnings("unchecked")
 				Class clazz = map.get(id);
 				AbstractGraphdbMsgExecutor ex = (AbstractGraphdbMsgExecutor) clazz.newInstance();
-				ex.init(getNode(), this.db, this.index);
+				ex.init(getNode().getSelf(), this.db, this.index);
 				cache.put(id, ex);
 			} catch (InstantiationException e) {
 				log.error("failed to create executor for '" + id + "': " + e.toString());

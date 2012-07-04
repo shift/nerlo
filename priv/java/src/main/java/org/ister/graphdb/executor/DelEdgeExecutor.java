@@ -21,17 +21,17 @@ public class DelEdgeExecutor extends AbstractGraphdbMsgExecutor {
 		if (deleteEdge((Long) msg.get("id"))) {
 			Map<String, Object> map = new HashMap<String, Object>(2);
 			map.put("result", "ok");
-			return Msg.answer(node.getSelf(), MsgTag.OK, map, msg);
+			return Msg.answer(self, MsgTag.OK, map, msg);
 		} else {
 			throw new ExecutorException("could_not_delete");
-		}		
+		}
 	}
 
 	@Override
 	protected String getId() {
 		return "del_edge";
 	}
-	
+
 	private boolean deleteEdge(Long id) {
 		boolean success = false;
 		Transaction tx = this.db.beginTx();

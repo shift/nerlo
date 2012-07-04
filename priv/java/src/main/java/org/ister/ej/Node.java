@@ -7,7 +7,14 @@ import java.util.Properties;
 
 import org.apache.log4j.Logger;
 
-import com.ericsson.otp.erlang.*;
+import com.ericsson.otp.erlang.OtpEpmd;
+import com.ericsson.otp.erlang.OtpErlangDecodeException;
+import com.ericsson.otp.erlang.OtpErlangExit;
+import com.ericsson.otp.erlang.OtpErlangObject;
+import com.ericsson.otp.erlang.OtpErlangPid;
+import com.ericsson.otp.erlang.OtpErlangTuple;
+import com.ericsson.otp.erlang.OtpMbox;
+import com.ericsson.otp.erlang.OtpNode;
 
 /**
  * This is always a hidden node in the cluster (due to jinterface).
@@ -45,6 +52,17 @@ public class Node implements Runnable {
 	private OtpErlangPid self = null;
 
 	private OtpErlangPid peerpid  = null;
+
+	/**
+	 * mostly for testing
+	 */
+	public Node() throws IOException {
+		this.peernode = "";
+		this.nodename = "";
+		this.mboxname = "";
+		this.handler  = new SimpleMsgHandler();
+		this.cookie   = "";
+	}
 
 	/**
 	 * Create with custom setup.
@@ -262,6 +280,7 @@ public class Node implements Runnable {
 
 
     private OtpNode setupNode() throws IOException {
+		log = Logger.getLogger(this.getClass());
         try {
             OtpNode node = new OtpNode(this.nodename, this.cookie);
             log.info("node running: " + this.nodename);
@@ -284,6 +303,7 @@ public class Node implements Runnable {
             return node;
         } catch (IOException e) {
             log.fatal("no node\n" + e.toString());
+            e.printStackTrace();
             throw e;
         }
     }

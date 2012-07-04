@@ -30,7 +30,7 @@ public class AddEdgeExecutor extends AbstractGraphdbMsgExecutor {
 		} else {
 			Map<String, Object> map = new HashMap<String, Object>(1);
 			map.put("result", id);
-			return Msg.answer(node.getSelf(), MsgTag.OK, map, msg);
+			return Msg.answer(self, MsgTag.OK, map, msg);
 		}
 	}
 
