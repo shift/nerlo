@@ -1,5 +1,6 @@
 package org.ister.graphdb.executor;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Map;
 
@@ -33,14 +34,8 @@ public class IndexExecutor extends AbstractGraphdbMsgExecutor {
 		String key = (String)msg.get("key");
 		String val = (String)msg.get("value");
 
-		if( op.equals("lookup") || op.equals("lookup_one") ) {
-			Object result = null;
-			if( op.equals("lookup_one") ) {
-				result = lookupOne(key, val);
-			} else {
-				result = lookup(key, val);
-			}
-
+		if( op.equals("lookup") ) {
+			Object result = lookup(key, val);
 			Map<String, Object> map = Collections.singletonMap("result",result);
 			return Msg.answer(self, MsgTag.OK, map, msg);
 		} else if( op.equals("add") || op.equals("del") ) {
@@ -58,30 +53,17 @@ public class IndexExecutor extends AbstractGraphdbMsgExecutor {
 		return "index";
 	}
 
-	private Object lookupOne(String key, String val) throws ExecutorException {
-		long id = -1L;
-		IndexHits<Node> hits = nodeIndex.get(key, val);
-		if( hits.size() < 1 )
-			throw new NotFoundException("no_vertex_found");
-		id = hits.getSingle().getId();
-		return new Long(id);
-	}
-
-	private Object lookup(String key, String val)
-			throws ExecutorException {
-		long id = -1L;
+	private ArrayList<Long> lookup(String key, String val)
+			throws ExecutorException, NotFoundException {
+		ArrayList<Long> ids = new ArrayList<Long>();
 		Transaction tx = this.db.beginTx();
 		try {
-//			IndexHits<org.neo4j.graphdb.Node> hits = this.index.getNodes(key, val);
-//			if (hits.size() < 1) {
-//				throw new ExecutorException("no_vertex_found");
-//			} else if (hits.size() > 1) {
-//				throw new ExecutorException("multiple_vertices_found");
-//			}
-//			id = hits.next().getId();
+			IndexHits<org.neo4j.graphdb.Node> hits = nodeIndex.get(key, val);
+			while( hits.hasNext() ) {
+				Node node = (Node)hits.next();
+				ids.add( node.getId() );
+			}
 			tx.success();
-//		} catch (ExecutorException e) {
-//			throw e;
 		} catch (Exception e) {
 			log.error("could not operate on index: " + e.toString());
 			tx.failure();
@@ -89,7 +71,7 @@ public class IndexExecutor extends AbstractGraphdbMsgExecutor {
 		} finally {
 			tx.finish();
 		}
-		return new Long(id);
+		return ids;
 	}
 
 	private void op(String op, Long id, String key, String val) throws ExecutorException {
@@ -98,9 +80,9 @@ public class IndexExecutor extends AbstractGraphdbMsgExecutor {
 		try {
 			Node node = this.db.getNodeById(id.longValue());
 			if (op.equals("add")) {
-				this.nodeIndex.add(node, key, val);
+				nodeIndex.add(node, key, val);
 			} else if (op.equals("del")) {
-				this.nodeIndex.remove(node, key, val);
+				nodeIndex.remove(node, key, val);
 			}
 			tx.success();
 		} catch (NotFoundException e) {

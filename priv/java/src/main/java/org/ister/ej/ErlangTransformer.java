@@ -45,7 +45,7 @@ public class ErlangTransformer {
 		} else if (o instanceof Integer) {
 			return new OtpErlangInt(((Integer) o).intValue());
 		} else if (o instanceof Long) {
-			return new OtpErlangInt(((Long) o).intValue());
+			return new OtpErlangLong(((Long) o).longValue());
 		} else if (o instanceof Double) {
 			return new OtpErlangDouble(((Double) o).doubleValue());
 		} else if ((o instanceof EjList) || (o instanceof List<?>)) {

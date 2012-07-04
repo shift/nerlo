@@ -1,6 +1,9 @@
 package org.ister.graphdb.executor;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
+
+import java.util.ArrayList;
 
 import org.apache.log4j.Logger;
 import org.ister.ej.Msg;
@@ -11,7 +14,6 @@ import org.junit.Before;
 import org.junit.Test;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
-import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.index.IndexManager;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
@@ -42,11 +44,12 @@ public class IndexExecutorTest {
 	private final OtpErlangTuple handler = getTwoTuple("handler", new OtpErlangAtom("graphdb") );
 	private final OtpErlangTuple call = getTwoTuple("call", new OtpErlangAtom("index") );
 
-	private Node testNode;
+	private ArrayList<Node> testNodes;
 
 	@Before
 	public void setUp() throws Exception {
 		log = Logger.getLogger(this.getClass());
+		testNodes = new ArrayList<Node>();
 
 		// startup db
 		db = new EmbeddedGraphDatabase( DB_PATH );
@@ -55,7 +58,7 @@ public class IndexExecutorTest {
 		ie.init(pid, db, mgr);
 		ie.nodeIndex = mgr.forNodes("usernames");
 
-		makeTestVertex();
+		makeTestVertex("username", "boorad");
 	}
 
 	@After
@@ -63,7 +66,9 @@ public class IndexExecutorTest {
 		Transaction tx = db.beginTx();
 		try {
 			ie.nodeIndex.delete();
-			this.testNode.delete();
+			for( Node n : testNodes ) {
+				n.delete();
+			}
 			tx.success();
 		} finally {
 			tx.finish();
@@ -73,7 +78,7 @@ public class IndexExecutorTest {
 
 	@Test
 	public void testIndexLookupOne() throws Exception {
-		OtpErlangTuple op = getTwoTuple( "op", new OtpErlangAtom("lookup_one") );
+		OtpErlangTuple op = getTwoTuple( "op", new OtpErlangAtom("lookup") );
 		OtpErlangTuple id = getTwoTuple( "id", new OtpErlangLong(-1L) );
 		OtpErlangTuple key = getTwoTuple( "key", new OtpErlangAtom("username") );
 		OtpErlangTuple val = getTwoTuple( "value", new OtpErlangString("boorad") );
@@ -83,12 +88,13 @@ public class IndexExecutorTest {
 		Msg msg = new Msg(pid, ref, tuple);
 		assertTrue( ie.checkMsg(msg) );
 		Msg resp = ie.execMsg(msg);
-		assertTrue(resp.getMsg().toString().equals("{ok,[{result,1}]}"));
+		assertEquals("index lookup",
+				     "{ok,[{result,[1]}]}", resp.getMsg().toString());
     }
 
-	@Test(expected = NotFoundException.class)
-	public void testIndexLookupOneNotFound() throws Exception {
-		OtpErlangTuple op = getTwoTuple( "op", new OtpErlangAtom("lookup_one") );
+	@Test
+	public void testIndexLookupNotFound() throws Exception {
+		OtpErlangTuple op = getTwoTuple( "op", new OtpErlangAtom("lookup") );
 		OtpErlangTuple id = getTwoTuple( "id", new OtpErlangLong(-1L) );
 		OtpErlangTuple key = getTwoTuple( "key", new OtpErlangAtom("username") );
 		OtpErlangTuple val = getTwoTuple( "value", new OtpErlangString("notboorad") );
@@ -98,6 +104,27 @@ public class IndexExecutorTest {
 		Msg msg = new Msg(pid, ref, tuple);
 		assertTrue( ie.checkMsg(msg) );
 		Msg resp = ie.execMsg(msg);
+		assertEquals("index lookup not found",
+					 "{ok,[{result,[]}]}", resp.getMsg().toString());
+    }
+
+	@Test
+	public void testIndexLookupMultiple() throws Exception {
+		makeTestVertex("username", "ingo");
+		makeTestVertex("username", "boorad");  // a dupe
+
+		OtpErlangTuple op = getTwoTuple( "op", new OtpErlangAtom("lookup") );
+		OtpErlangTuple id = getTwoTuple( "id", new OtpErlangLong(-1L) );
+		OtpErlangTuple key = getTwoTuple( "key", new OtpErlangAtom("username") );
+		OtpErlangTuple val = getTwoTuple( "value", new OtpErlangString("boorad") );
+
+		OtpErlangTuple tuple = getPayload(new OtpErlangObject[]{
+				handler, call, op, id, key, val});
+		Msg msg = new Msg(pid, ref, tuple);
+		assertTrue( ie.checkMsg(msg) );
+		Msg resp = ie.execMsg(msg);
+		assertEquals("index lookup",
+				     "{ok,[{result,[1,3]}]}", resp.getMsg().toString());
     }
 
 
@@ -119,14 +146,14 @@ public class IndexExecutorTest {
 		return tuple;
 	}
 
-	private void makeTestVertex() {
+	private void makeTestVertex(String key, String val) {
 		Transaction tx = db.beginTx();
 		try {
 			// make test vertex
 			Node node = db.createNode();
-	        node.setProperty("username", "boorad");
-	        ie.nodeIndex.add(node, "username", node.getProperty("username"));
-	        this.testNode = node;
+	        node.setProperty(key, val);
+	        ie.nodeIndex.add(node, key, node.getProperty(key));
+	        testNodes.add(node);
 	        tx.success();
 		} catch( Exception e ) {
 			log.error("Error making test vertex: " + e);
