@@ -29,20 +29,18 @@ import org.ister.graphdb.executor.InfoExecutor;
 import org.ister.graphdb.executor.SetPropertyExecutor;
 import org.ister.graphdb.executor.VertexGetEdgesExecutor;
 import org.neo4j.graphdb.GraphDatabaseService;
-import org.neo4j.graphdb.index.IndexManager;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
 
 public class DbMsgHandler extends AbstractMsgHandler {
 
 	private final Logger log = Main.getLogger();
 	private final String pwd = System.getProperty("user.dir");
-	@SuppressWarnings("unchecked")
+	@SuppressWarnings("rawtypes")
 	private final HashMap<String, Class> map = new HashMap<String, Class>();
 	private final HashMap<String, AbstractGraphdbMsgExecutor> cache = new HashMap<String, AbstractGraphdbMsgExecutor>();
 
 	private String path = null;
 	private GraphDatabaseService db = null;
-	private IndexManager index = null;
 	private final ExecutorService yielder = Executors.newSingleThreadExecutor();
 
 	private final ExecutorService exec = Executors.newCachedThreadPool();
@@ -166,10 +164,10 @@ public class DbMsgHandler extends AbstractMsgHandler {
 				return null;
 			}
 			try {
-				@SuppressWarnings("unchecked")
+				@SuppressWarnings({ "rawtypes" })
 				Class clazz = map.get(id);
 				AbstractGraphdbMsgExecutor ex = (AbstractGraphdbMsgExecutor) clazz.newInstance();
-				ex.init(getNode().getSelf(), this.db, this.index);
+				ex.init(getNode().getSelf(), this.db);
 				cache.put(id, ex);
 			} catch (InstantiationException e) {
 				log.error("failed to create executor for '" + id + "': " + e.toString());
@@ -192,7 +190,6 @@ public class DbMsgHandler extends AbstractMsgHandler {
 	private boolean runDbInit(String path) {
 		try {
 			this.db = new EmbeddedGraphDatabase(path);
-			//this.index = new LuceneIndexService(this.db);
 			log.info("graph database initialized: " + path);
 		} catch (Exception e) {
 			log.error("initialization of database failed: " + e.toString());
@@ -202,9 +199,6 @@ public class DbMsgHandler extends AbstractMsgHandler {
 	}
 
 	private void dbShutdown() {
-		if (this.index instanceof IndexManager) {
-			this.index = null;
-		}
 		if (this.db instanceof GraphDatabaseService) {
 			this.db.shutdown();
 			this.db = null;

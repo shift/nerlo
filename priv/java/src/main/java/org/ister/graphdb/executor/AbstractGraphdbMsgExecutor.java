@@ -14,10 +14,10 @@ public abstract class AbstractGraphdbMsgExecutor extends AbstractMsgExecutor {
 	protected GraphDatabaseService db;
 	protected IndexManager index_mgr;
 
-	public void init(OtpErlangPid self, GraphDatabaseService db, IndexManager mgr) {
+	public void init(OtpErlangPid self, GraphDatabaseService db) {
 		super.init(self);
 		this.db = db;
-		this.index_mgr = mgr;
+		this.index_mgr = db.index();
 	}
 
 }

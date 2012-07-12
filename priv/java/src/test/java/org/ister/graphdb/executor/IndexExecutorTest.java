@@ -15,7 +15,7 @@ import org.junit.Test;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.index.IndexManager;
+import org.neo4j.graphdb.index.Index;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
 
 import com.ericsson.otp.erlang.OtpErlangAtom;
@@ -32,8 +32,8 @@ public class IndexExecutorTest {
 	private static Logger log;
 
 	private GraphDatabaseService db;
-	private IndexManager mgr;
 	private static final String DB_PATH = "/tmp/neo4j-test";
+	private static final String NODEINDEX_NAME = "usernames";
 	private IndexExecutor ie;
 
 	private final OtpErlangString calltag = new OtpErlangString(MsgTag.CALL);
@@ -41,8 +41,10 @@ public class IndexExecutorTest {
 	private final OtpErlangPid pid = new OtpErlangPid("foo",0,0,0);
 	private final MsgRef ref = new MsgRef(pid, new OtpErlangRef("dummy", 0, 0));
 
-	private final OtpErlangTuple handler = getTwoTuple("handler", new OtpErlangAtom("graphdb") );
-	private final OtpErlangTuple call = getTwoTuple("call", new OtpErlangAtom("index") );
+	private final OtpErlangTuple handler = getTwoTuple("handler",
+			new OtpErlangAtom("graphdb") );
+	private final OtpErlangTuple call = getTwoTuple("call",
+			new OtpErlangAtom("index") );
 
 	private ArrayList<Node> testNodes;
 
@@ -53,10 +55,8 @@ public class IndexExecutorTest {
 
 		// startup db
 		db = new EmbeddedGraphDatabase( DB_PATH );
-		mgr = db.index();
 		ie = new IndexExecutor();
-		ie.init(pid, db, mgr);
-		ie.nodeIndex = mgr.forNodes("usernames");
+		ie.init(pid, db);
 
 		makeTestVertex("username", "boorad");
 	}
@@ -65,7 +65,7 @@ public class IndexExecutorTest {
 	public void tearDown() throws Exception {
 		Transaction tx = db.beginTx();
 		try {
-			ie.nodeIndex.delete();
+			// TODO: delete node index;
 			for( Node n : testNodes ) {
 				n.delete();
 			}
@@ -78,13 +78,7 @@ public class IndexExecutorTest {
 
 	@Test
 	public void testIndexLookupOne() throws Exception {
-		OtpErlangTuple op = getTwoTuple( "op", new OtpErlangAtom("lookup") );
-		OtpErlangTuple id = getTwoTuple( "id", new OtpErlangLong(-1L) );
-		OtpErlangTuple key = getTwoTuple( "key", new OtpErlangAtom("username") );
-		OtpErlangTuple val = getTwoTuple( "value", new OtpErlangString("boorad") );
-
-		OtpErlangTuple tuple = getPayload(new OtpErlangObject[]{
-				handler, call, op, id, key, val});
+		OtpErlangTuple tuple = getLookupPayload("username", "boorad");
 		Msg msg = new Msg(pid, ref, tuple);
 		assertTrue( ie.checkMsg(msg) );
 		Msg resp = ie.execMsg(msg);
@@ -94,13 +88,7 @@ public class IndexExecutorTest {
 
 	@Test
 	public void testIndexLookupNotFound() throws Exception {
-		OtpErlangTuple op = getTwoTuple( "op", new OtpErlangAtom("lookup") );
-		OtpErlangTuple id = getTwoTuple( "id", new OtpErlangLong(-1L) );
-		OtpErlangTuple key = getTwoTuple( "key", new OtpErlangAtom("username") );
-		OtpErlangTuple val = getTwoTuple( "value", new OtpErlangString("notboorad") );
-
-		OtpErlangTuple tuple = getPayload(new OtpErlangObject[]{
-				handler, call, op, id, key, val});
+		OtpErlangTuple tuple = getLookupPayload("username", "notboorad");
 		Msg msg = new Msg(pid, ref, tuple);
 		assertTrue( ie.checkMsg(msg) );
 		Msg resp = ie.execMsg(msg);
@@ -113,22 +101,25 @@ public class IndexExecutorTest {
 		makeTestVertex("username", "ingo");
 		makeTestVertex("username", "boorad");  // a dupe
 
-		OtpErlangTuple op = getTwoTuple( "op", new OtpErlangAtom("lookup") );
-		OtpErlangTuple id = getTwoTuple( "id", new OtpErlangLong(-1L) );
-		OtpErlangTuple key = getTwoTuple( "key", new OtpErlangAtom("username") );
-		OtpErlangTuple val = getTwoTuple( "value", new OtpErlangString("boorad") );
-
-		OtpErlangTuple tuple = getPayload(new OtpErlangObject[]{
-				handler, call, op, id, key, val});
+		OtpErlangTuple tuple = getLookupPayload("username", "boorad");
 		Msg msg = new Msg(pid, ref, tuple);
 		assertTrue( ie.checkMsg(msg) );
 		Msg resp = ie.execMsg(msg);
-		assertEquals("index lookup",
-				     "{ok,[{result,[1,3]}]}", resp.getMsg().toString());
+		String strResp = resp.getMsg().toString();
+		assert(strResp.equalsIgnoreCase("{ok,[{result,[1,3]}]}") ||
+			   strResp.equalsIgnoreCase("{ok,[{result,[3,1]}]}")
+			  );
     }
 
-
-
+	@Test
+	public void testAddOne() throws Exception {
+		OtpErlangTuple tuple = getPayload("add","node",1L,"username","boorad");
+		Msg msg = new Msg(pid, ref, tuple);
+		assertTrue( ie.checkMsg(msg) );
+		Msg resp = ie.execMsg(msg);
+		assertEquals("add one",
+					 "{ok,[{result,\"ok\"}]}", resp.getMsg().toString());
+	}
 
 
 	// TODO: put these in TestUtils somewhere shared
@@ -139,7 +130,23 @@ public class IndexExecutorTest {
 		return handler;
 	}
 
-	private OtpErlangTuple getPayload(OtpErlangObject[] list) {
+	private OtpErlangTuple getLookupPayload(String k, String v) {
+		return getPayload("lookup", "node", -1L, k, v);
+	}
+
+	private OtpErlangTuple getPayload(String o, String t,
+			Long l, String k, String v) {
+
+		OtpErlangTuple op = getTwoTuple( "op", new OtpErlangAtom(o) );
+		OtpErlangTuple type = getTwoTuple("type", new OtpErlangAtom(t));
+		OtpErlangTuple name = getTwoTuple("name",
+				new OtpErlangAtom(NODEINDEX_NAME));
+		OtpErlangTuple id = getTwoTuple( "id", new OtpErlangLong(l) );
+		OtpErlangTuple key = getTwoTuple( "key", new OtpErlangAtom(k) );
+		OtpErlangTuple val = getTwoTuple( "value", new OtpErlangString(v) );
+
+		OtpErlangObject[] list = new OtpErlangObject[]{
+				handler, call, op, type, name, id, key, val};
 		OtpErlangList payload = new OtpErlangList(list);
 		OtpErlangObject[] os  = new OtpErlangObject[]{calltag, payload};
 		OtpErlangTuple tuple = new OtpErlangTuple(os);
@@ -152,7 +159,8 @@ public class IndexExecutorTest {
 			// make test vertex
 			Node node = db.createNode();
 	        node.setProperty(key, val);
-	        ie.nodeIndex.add(node, key, node.getProperty(key));
+	        Index<Node> nodeIndex = db.index().forNodes(NODEINDEX_NAME);
+	        nodeIndex.add(node, key, node.getProperty(key));
 	        testNodes.add(node);
 	        tx.success();
 		} catch( Exception e ) {

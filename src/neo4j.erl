@@ -29,9 +29,10 @@
         ,edge_del_property/2
         ,edge_get_property/2
         ,edge_get_properties/1
-        ,index_add_vertex/3
-        ,index_del_vertex/3
-        ,index_get_vertex/2
+        ,create_index/2
+        ,index_add_vertex/4
+        ,index_del_vertex/4
+        ,index_get_vertex/3
         ,order/0
         ,size/0
         ,types/0
@@ -120,8 +121,8 @@ vertex_get_neighbourhood(V=?VERTEX(Id), Type) ->
 % @doc Set a property at a vertex.
 vertex_set_property(V, Key, Val) when not is_atom(Key) ->
     vertex_set_property(V, nerlo_util:to_atom(Key), Val);
-vertex_set_property(V, Key, Val) when not is_binary(Val) ->
-    vertex_set_property(V, Key, nerlo_util:to_bin(Key));
+vertex_set_property(V, Key, Val) when not is_list(Val) ->
+    vertex_set_property(V, Key, nerlo_util:to_list(Key));
 vertex_set_property(?VERTEX(Id), Key, Val) ->
     private_set_property(vertex, Id, Key, Val).
 
@@ -172,7 +173,7 @@ edge_get_end_vertex(Edge) ->
     {_Start,End} = edge_get_adjacent_vertices(Edge),
     End.
 
-% @doc Get the type of an ede.
+% @doc Get the type of an edge.
 edge_get_type(?EDGE(_Id,Type,_A,_B)) ->
     Type.
 
@@ -192,20 +193,37 @@ edge_get_property(?EDGE(Id,_Type,_A,_B), Key) ->
 edge_get_properties(?EDGE(Id,_Type,_A,_B)) ->
     private_get_properties(edge, Id).
 
+%% It kind of sucks to have to manage indices in the app.  le sigh.
+
+% @doc Create an index
+create_index(Type, Name) ->
+    private_index(create, Type, Name, -1, nil, nil).
+
+%% TODO: delete_index
+
 % @doc Add a vertex to the index.
-index_add_vertex(?VERTEX(Id), Key, Val) ->
-    private_index(Id, Key, Val, add).
+index_add_vertex(?VERTEX(Id), Name, Key, Val) ->
+    private_index(add, node, Name, Id, Key, Val).
 
 % @doc Remove a vertex from the index.
-index_del_vertex(?VERTEX(Id), Key, Val) ->
-    private_index(Id, Key, Val, del).
+index_del_vertex(?VERTEX(Id), Name, Key, Val) ->
+    private_index(del, node, Name, Id, Key, Val).
 
 % @doc Lookup a vertex in the index.
-index_get_vertex(Key, Val) ->
-    case private_index(0, Key, Val, lookup) of
+index_get_vertex(Name, Key, Val) ->
+    case private_index(lookup, node, Name, -1, Key, Val) of
         Error = {error, _} -> Error;
-        Id                 -> ?VERTEX(Id)
+        Id when is_integer(Id) -> ?VERTEX(Id);
+        [First | _] = All ->
+            ej_log:warn("multiple vertices found in index: ~p.  Returning first",
+                        [All]),
+            ?VERTEX(First);
+        Result -> {error, bad_index_get_vertex, Result}
     end.
+
+%% TODO: index_add_edge and family
+%%       Type = 'edge'
+
 
 % @doc Determine the order of the graph, the number of vertices.
 order() ->
@@ -289,16 +307,19 @@ private_info(Item) ->
         Error -> Error
     end.
 
-private_index(Id, Key, Val, Op) ->
+private_index(Op, Type, Name, Id, Key, Val) ->
     case ej_srv:call(?TAG_CALL, [?HANDLER
                                 ,{call,index}
                                 ,{op,Op}
+                                ,{type,Type}
+                                ,{name,Name}
                                 ,{id,Id}
                                 ,{key,Key}
                                 ,{value,Val}]) of
         {ok, Data} ->
             case lists:keyfind(result,1,Data) of
                 false          -> {error, answer_has_no_result};
+                {result,"ok"} -> ok;
                 {result,Value} -> Value
             end;
         Error -> Error
