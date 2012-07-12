@@ -17,7 +17,7 @@
 -module(ej_srv).
 -behaviour(gen_server).
 
--define(FULL_HANDSHAKE_RETRIES, 1).
+-define(FULL_HANDSHAKE_RETRIES, 3).
 
 % public interface
 -export([send/2, call/2, call/3, callback/3, add_listener/1, ping/0, restart_peer/0]).
@@ -303,17 +303,20 @@ quick_handshake(Peer) ->
     ej_log:info("quick handshake to: ~w", [Peer]),
     run_handshake(Peer).
 
-full_handshake(Peer, BinDir) ->
-    full_handshake(Peer, BinDir, ?FULL_HANDSHAKE_RETRIES).
-
-full_handshake(Peer,_,0) -> Peer;
-full_handshake(Peer, BinDir, Attempts) ->
+full_handshake({Short,_Long} = Peer, BinDir) ->
     ej_log:info("full handshake to: ~w", [Peer]),
-    port(BinDir),
-    timer:sleep(500),
-    case run_handshake(Peer) of
+    {ok, Names} = erl_epmd:names(),
+    case nerlo_util:get_value(nerlo_util:to_list(Short), Names) of
+        undefined ->
+            port(BinDir),
+            timer:sleep(500);
+        _ ->
+            ej_log:warn("Peer '~p' already registered in epmd but I "
+                        "still can't connect to it.", [Short])
+    end,
+    case run_handshake(Peer, ?FULL_HANDSHAKE_RETRIES) of
         {ok,From}         -> From;
-        {error,no_answer} -> full_handshake(Peer, BinDir, Attempts-1)
+        {error,no_answer} -> Peer
     end.
 
 port(Bindir) ->
@@ -327,16 +330,22 @@ port(Bindir) ->
     ej_log:info("port: ~w", [Port]).
 
 run_handshake(Peer) ->
+    run_handshake(Peer, 1).
+
+run_handshake(Peer, 0) ->
+    ej_log:info("handshake giving up to ~p", [Peer]),
+    {error,no_answer};
+run_handshake(Peer, Tries) ->
     send_peer(Peer, Ref=get_ref(), ?TAG_NODE, [?EJMSGPART(call,handshake)]),
     receive
-        {From,Ref,{?TAG_OK,[?EJMSGPART(call,handshake)]}} ->
+        {From,Ref,{?TAG_OK,[?EJMSGPART(call, "handshake")]}} ->
             ej_log:info("got handshake from: ~w", [From]),
             erlang:link(From),
             {ok,From}
     after
         ?BLOCKING_TIMEOUT ->
             ej_log:info("handshake timeout", []),
-            {error,no_answer}
+            run_handshake(Peer, Tries - 1)
     end.
 
 notify_listeners(What) ->
@@ -386,7 +395,7 @@ handle_exit(Any,S) ->
     S.
 
 send_ping(Peer) ->
-    send_peer(Peer,Ref=get_ref(),?TAG_NODE,Msg=[?EJMSGPART(call,ping)]),
+    send_peer(Peer,Ref=get_ref(),?TAG_NODE,Msg=[?EJMSGPART(call,"ping")]),
     receive
         {Peer,Ref,{ok,Msg}} -> pong;
         _                   -> pang
