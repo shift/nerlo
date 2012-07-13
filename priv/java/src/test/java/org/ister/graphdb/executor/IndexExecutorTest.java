@@ -121,6 +121,20 @@ public class IndexExecutorTest {
 					 "{ok,[{result,\"ok\"}]}", resp.getMsg().toString());
 	}
 
+	@Test
+	public void testIndexQuery() throws Exception {
+		makeTestVertex("username", "ingo");
+		String query = "username:*o*";
+		OtpErlangTuple tuple = getPayload("query", "node", -1L, "", query);
+		Msg msg = new Msg(pid, ref, tuple);
+		assertTrue( ie.checkMsg(msg) );
+		Msg resp = ie.execMsg(msg);
+		String strResp = resp.getMsg().toString();
+		assert(strResp.equalsIgnoreCase("{ok,[{result,[1,2]}]}") ||
+			   strResp.equalsIgnoreCase("{ok,[{result,[2,1]}]}")
+			  );
+    }
+
 
 	// TODO: put these in TestUtils somewhere shared
 	private OtpErlangTuple getTwoTuple(String a, OtpErlangObject b) {

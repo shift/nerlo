@@ -27,7 +27,7 @@ public class Main {
 	private static Node NODE = null;
 	private static Properties PROPERTIES = null;
 
-	private static final String VERSION = "0.0.1-alpha";
+	private static final String VERSION = "0.2.0-alpha";
 	private static final String NAME = "nerlo";
 
 	private static Logger log;

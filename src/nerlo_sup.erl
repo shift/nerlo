@@ -2,11 +2,11 @@
 
 -behaviour(supervisor).
 
--export([start_link/1, init/1]).
+-export([start_link/0, init/1]).
 
 
-start_link(Args) when is_list(Args) ->
-    supervisor:start_link({local,?MODULE}, ?MODULE, [Args]).
+start_link() ->
+    supervisor:start_link({local,?MODULE}, ?MODULE, []).
 
 init(_Args) ->
     Spec =

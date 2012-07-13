@@ -34,7 +34,7 @@ import org.neo4j.kernel.EmbeddedGraphDatabase;
 public class DbMsgHandler extends AbstractMsgHandler {
 
 	private final Logger log = Main.getLogger();
-	private final String pwd = System.getProperty("user.dir");
+
 	@SuppressWarnings("rawtypes")
 	private final HashMap<String, Class> map = new HashMap<String, Class>();
 	private final HashMap<String, AbstractGraphdbMsgExecutor> cache = new HashMap<String, AbstractGraphdbMsgExecutor>();
@@ -49,7 +49,7 @@ public class DbMsgHandler extends AbstractMsgHandler {
 	public void init(Node node) {
 		super.init(node);
 
-		this.path = pwd + "/" + Main.getProperty("graphdb.db.path", "db");
+		this.path = Main.getProperty("graphdb.db.path", "db");
 		log.debug("db path: " + this.path);
 		this.map.put("add_vertex", AddVertexExecutor.class);
 		this.map.put("vertex_get_edges", VertexGetEdgesExecutor.class);

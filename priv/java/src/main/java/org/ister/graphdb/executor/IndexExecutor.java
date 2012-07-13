@@ -25,8 +25,8 @@ public class IndexExecutor extends AbstractGraphdbMsgExecutor {
 	@Override
 	protected boolean checkMsg(Msg msg) {
 		return ((msg.has("op") && msg.has("type") && msg.has("name")
-				 && msg.has("id") && msg.has("key") && msg.has("value"))
-				&& (type_is_valid((String) msg.get("type"))));
+				&& msg.has("id") && msg.has("key") && msg.has("value")) && (type_is_valid((String) msg
+				.get("type"))));
 	}
 
 	@Override
@@ -54,6 +54,12 @@ public class IndexExecutor extends AbstractGraphdbMsgExecutor {
 				} else {
 					result = lookup_edge(key, val);
 				}
+			} else if (op.equalsIgnoreCase("query")) {
+				if (type.equalsIgnoreCase("node")) {
+					result = query_node(val);
+				} else {
+					result = query_edge(val);
+				}
 			} else if (op.equalsIgnoreCase("add") || op.equalsIgnoreCase("del")) {
 				if (type.equalsIgnoreCase("node")) {
 					result = op_node(op, id, key, val);
@@ -63,11 +69,11 @@ public class IndexExecutor extends AbstractGraphdbMsgExecutor {
 			} else {
 				throw new RuntimeException("unknown operation: " + op);
 			}
-        } catch( Exception e ) {
-        	e.printStackTrace();
-        }
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
 
-        Map<String, Object> map = Collections.singletonMap("result", result);
+		Map<String, Object> map = Collections.singletonMap("result", result);
 		return Msg.answer(self, MsgTag.OK, map, msg);
 	}
 
@@ -135,6 +141,50 @@ public class IndexExecutor extends AbstractGraphdbMsgExecutor {
 		Transaction tx = this.db.beginTx();
 		try {
 			IndexHits<Relationship> hits = edgeIndex.get(key, val);
+			while (hits.hasNext()) {
+				Relationship edge = (Relationship) hits.next();
+				ids.add(edge.getId());
+			}
+			tx.success();
+		} catch (Exception e) {
+			log.error("could not operate on index: " + e.toString());
+			tx.failure();
+			e.printStackTrace();
+			throw new ExecutorException("could_not_operate_on_index");
+		} finally {
+			tx.finish();
+		}
+		return ids;
+	}
+
+	private ArrayList<Long> query_node(String query) throws ExecutorException,
+			NotFoundException {
+		ArrayList<Long> ids = new ArrayList<Long>();
+		Transaction tx = this.db.beginTx();
+		try {
+			IndexHits<Node> hits = nodeIndex.query(query);
+			while (hits.hasNext()) {
+				Node node = (Node) hits.next();
+				ids.add(node.getId());
+			}
+			tx.success();
+		} catch (Exception e) {
+			log.error("could not operate on index: " + e.toString());
+			tx.failure();
+			e.printStackTrace();
+			throw new ExecutorException("could_not_operate_on_index");
+		} finally {
+			tx.finish();
+		}
+		return ids;
+	}
+
+	private ArrayList<Long> query_edge(String query) throws ExecutorException,
+			NotFoundException {
+		ArrayList<Long> ids = new ArrayList<Long>();
+		Transaction tx = this.db.beginTx();
+		try {
+			IndexHits<Relationship> hits = edgeIndex.query(query);
 			while (hits.hasNext()) {
 				Relationship edge = (Relationship) hits.next();
 				ids.add(edge.getId());

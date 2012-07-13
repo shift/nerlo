@@ -10,18 +10,18 @@
 
 -author("Ingo Schramm").
 
--define(APPNAME, nerlo).
+-include("ej.hrl").
 
 start() ->
-    application:start(?APPNAME).
+    application:start(?APP).
 
 stop() ->
     %% TODO: shut down jnode if it's still running
-    application:stop(?APPNAME).
+    application:stop(?APP).
 
 start(Type, _Args) ->
     case Type of
-        normal   -> nerlo_sup:start_link([]);
+        normal   -> nerlo_sup:start_link();
         takeover -> ok;
         failover -> ok
     end.

@@ -1,6 +1,6 @@
 {application, nerlo,
     [{description, "Erlang Neo4j client"},
-     {vsn,"0.0.1"},
+     {vsn,"0.2.0"},
      {modules, [
        ej_log, ej_srv, ej_sup,
        neo4j, neo4j_srv, neo4j_sup,

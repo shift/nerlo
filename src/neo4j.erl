@@ -33,6 +33,7 @@
         ,index_add_vertex/4
         ,index_del_vertex/4
         ,index_get_vertex/3
+        ,index_query_vertex/2
         ,order/0
         ,size/0
         ,types/0
@@ -224,6 +225,12 @@ index_get_vertex(Name, Key, Val) ->
 %% TODO: index_add_edge and family
 %%       Type = 'edge'
 
+index_query_vertex(Name, Query) ->
+    case private_index('query', node, Name, -1, "", Query) of
+        Error = {error, _} -> Error;
+        Results when is_list(Results) -> Results;
+        Result -> {error, bad_index_query_vertex, Result}
+    end.
 
 % @doc Determine the order of the graph, the number of vertices.
 order() ->

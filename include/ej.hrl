@@ -15,3 +15,5 @@
 
 -define(EJCALLBACKSTOP, 'EJCALLBACKSTOP').
 -define(EJCALLBACKTIMEOUT, 'EJCALLBACKTIMEOUT').
+
+-define(PROPS_FILE, "nerlo.properties.file").

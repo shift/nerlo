@@ -51,6 +51,7 @@
             ,bindir            = ?BINDIR
             ,stopping          = false
             ,callbacks         = null
+            ,port              = nil
             }).
 
 %% ------ PUBLIC -----
@@ -244,9 +245,12 @@ handle_info(Msg,S) ->
     {noreply,S}.
 
 % @hidden
-terminate(_Reason,S) ->
-    %% TODO: shut down port if it's still open (jnode)
-    %%       need ref to port in #state?
+terminate(_Reason,S=#ej{port=nil}) ->
+    {noreply, S};
+terminate(_Reason,S=#ej{port=Port}) ->
+    ej_log:info("closing port: ~p", [Port]),
+    Res = erlang:port_close(Port),
+    ej_log:info("port close result: ~p", [Res]),
     {noreply, S}.
 
 % @hidden
@@ -273,7 +277,8 @@ initialize(S) ->
             true                      -> S#ej.bindir
         end,
     % callbacks=ets:new(erlang:make_ref(),[])
-    S2 = S#ej{peer=handshake(Bindir)},
+    {Peer, Port} = handshake(Bindir),
+    S2 = S#ej{peer=Peer, port=Port},
     Workers =
         lists:foldl(fun(_I,Acc) ->
                             case start_worker(S2) of
@@ -287,13 +292,13 @@ initialize(S) ->
 handshake(Bindir) ->
     {ok, Hostname} = inet:gethostname(),
     Peer = {?PEERNAME,list_to_atom(?PEERSTR ++ "@" ++ Hostname)},
-    Pid =
+    {Pid, Port} =
     case quick_handshake(Peer) of
-        {ok,From}         -> From;
+        {ok,From}         -> {From, nil};
         {error,no_answer} -> full_handshake(Peer,Bindir)
     end,
     case send_ping(Pid) of
-        pong  -> Pid;
+        pong  -> {Pid, Port};
         Error ->
             ej_log:error("peer not reachable: ~w", [Error]),
             throw({peer_does_not_answer,Error})
@@ -306,28 +311,35 @@ quick_handshake(Peer) ->
 full_handshake({Short,_Long} = Peer, BinDir) ->
     ej_log:info("full handshake to: ~w", [Peer]),
     {ok, Names} = erl_epmd:names(),
-    case nerlo_util:get_value(nerlo_util:to_list(Short), Names) of
+    Port = case nerlo_util:get_value(nerlo_util:to_list(Short), Names) of
         undefined ->
-            port(BinDir),
-            timer:sleep(500);
+            P = port(BinDir),
+            timer:sleep(500),
+            P;
         _ ->
             ej_log:warn("Peer '~p' already registered in epmd but I "
-                        "still can't connect to it.", [Short])
+                        "still can't connect to it.", [Short]),
+            nil
     end,
     case run_handshake(Peer, ?FULL_HANDSHAKE_RETRIES) of
-        {ok,From}         -> From;
-        {error,no_answer} -> Peer
+        {ok,From}         -> {From, Port};
+        {error,no_answer} -> {Peer, Port}
     end.
+
+get_props_file({ok, PF}) -> " -ps " ++ PF;
+get_props_file(_) -> "".
 
 port(Bindir) ->
     % TODO pass args to open_port canonically
     Args = "-peer " ++ atom_to_list(node())
+        ++ get_props_file(application:get_env(?APP, ?PROPS_FILE))
         ++ " -sname " ++ ?PEERSTR
         ++ " -cookie " ++ atom_to_list(erlang:get_cookie()),
     Cmd  = Bindir ++ "/" ++ ?JNODEBIN ++ " " ++ Args ++ " &",
     ej_log:info("open port to org.ister.ej.Node: ~p", [Cmd]),
     Port = erlang:open_port({spawn, Cmd},[stderr_to_stdout]),
-    ej_log:info("port: ~w", [Port]).
+    ej_log:info("port: ~w", [Port]),
+    Port.
 
 run_handshake(Peer) ->
     run_handshake(Peer, 1).
