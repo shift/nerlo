@@ -30,8 +30,8 @@
         ,edge_get_property/2
         ,edge_get_properties/1
         ,create_index/2
-        ,index_add_vertex/4
-        ,index_del_vertex/4
+        ,index_add_vertex_prop/4
+        ,index_del_vertex_prop/4
         ,index_get_vertex/3
         ,index_query_vertex/2
         ,order/0
@@ -202,17 +202,21 @@ create_index(Type, Name) ->
 
 %% TODO: delete_index
 
-% @doc Add a vertex to the index.
-index_add_vertex(?VERTEX(Id), Name, Key, Val) ->
-    private_index(add, node, Name, Id, Key, Val).
+% @doc Add a vertex k/v pair to the index.
+index_add_vertex_prop(?VERTEX(Id), Name, Key, Val) ->
+    private_index(add, node, Name, Id,
+                  nerlo_util:to_list(Key),
+                  nerlo_util:to_list(Val)).
 
-% @doc Remove a vertex from the index.
-index_del_vertex(?VERTEX(Id), Name, Key, Val) ->
+% @doc Remove a vertex k/v pair from the index.
+index_del_vertex_prop(?VERTEX(Id), Name, Key, Val) ->
     private_index(del, node, Name, Id, Key, Val).
 
 % @doc Lookup a vertex in the index.
 index_get_vertex(Name, Key, Val) ->
-    case private_index(lookup, node, Name, -1, Key, Val) of
+    case private_index(lookup, node, Name, -1,
+                       nerlo_util:to_list(Key),
+                       nerlo_util:to_list(Val)) of
         Error = {error, _} -> Error;
         Id when is_integer(Id) -> ?VERTEX(Id);
         [First | _] = All ->
@@ -226,7 +230,7 @@ index_get_vertex(Name, Key, Val) ->
 %%       Type = 'edge'
 
 index_query_vertex(Name, Query) ->
-    case private_index('query', node, Name, -1, "", Query) of
+    case private_index('query', node, Name, -1, '', Query) of
         Error = {error, _} -> Error;
         Results when is_list(Results) -> Results;
         Result -> {error, bad_index_query_vertex, Result}
