@@ -123,7 +123,8 @@ initialize(S) ->
                 false ->
                     ej_log:error("no database available", []),
                     erlang:send_after(100, self(), {'STOP'}),
-                    S#neo4j{db=false}
+                    throw({error, no_database_available})
+                    %S#neo4j{db=false}
             end
     end,
     ej_srv:add_listener(self()),
