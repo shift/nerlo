@@ -45,9 +45,9 @@ public class Main {
 	 * @throws Exception
 	 */
 	public void run() throws Exception {
-	    log.debug("propf: " + this.propf);
 		parseOptions(this.args);
 	    initProps(this.propf);
+	    log.debug("propf: " + this.propf);
 	    log.info("---- Main initialized");
 	    NODE = Node.getInstance(sname, peer, PROPERTIES);
 	    new Thread(NODE).start();

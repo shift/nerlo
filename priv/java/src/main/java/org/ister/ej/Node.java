@@ -117,6 +117,7 @@ public class Node implements Runnable {
 	public void run() {
 
 		this.handler.init(this);
+		log.info("handler: " + this.handler.toString());
 
 		try {
 	        if (node.ping(peernode, 2000)) {
