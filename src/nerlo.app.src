@@ -3,7 +3,7 @@
      {vsn,"0.2.0"},
      {modules, [
        ej_log, ej_srv, ej_sup,
-       neo4j, neo4j_srv, neo4j_sup,
+       neo4j, neo4j_srv,
        f, nerlo_util
      ]},
      {registered,[]},
