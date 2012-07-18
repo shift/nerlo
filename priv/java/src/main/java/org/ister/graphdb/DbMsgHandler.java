@@ -1,5 +1,6 @@
 package org.ister.graphdb;
 
+import java.io.File;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.CompletionService;
@@ -104,15 +105,7 @@ public class DbMsgHandler extends AbstractMsgHandler {
 
     	if (tag.equals(MsgTag.CALL)) {
     		if (msg.match("call", "init")) {
-    			Msg answer = null;
-    			if (dbInit(this.path)) {
-    				cache.clear();
-    				Map<String, Object> map = new HashMap<String, Object>(2);
-	    		    map.put("result", true);
-	    		    answer = Msg.answer(node.getSelf(), MsgTag.OK, map, msg);
-    			} else {
-    				answer = errorAnswer(msg, "no_db");
-    			}
+    			Msg answer = handle_init(msg, node);
     		    node.sendPeer(answer);
     		    return;
     		} else if (msg.match("call", "stop")) {
@@ -126,6 +119,13 @@ public class DbMsgHandler extends AbstractMsgHandler {
     			Map<String, Object> map = new HashMap<String, Object>(2);
     		    map.put("result", (this.db != null));
     		    Msg answer = Msg.answer(node.getSelf(), MsgTag.OK, map, msg);
+    		    node.sendPeer(answer);
+    		    return;
+    		} else if (msg.match("call", "scortch")) {
+    			shutdown();
+    			deleteRecursively(new File(this.path));
+    			new File(this.path).mkdir();
+    			Msg answer = handle_init(msg, node);
     		    node.sendPeer(answer);
     		    return;
     		} else if (msg.has("call")) {
@@ -147,6 +147,35 @@ public class DbMsgHandler extends AbstractMsgHandler {
     	}
 
 		logUnhandledMsg(log, msg);
+	}
+
+	Msg handle_init(Msg msg, Node node) {
+		Msg answer = null;
+		if (dbInit(this.path)) {
+			cache.clear();
+			Map<String, Object> map = new HashMap<String, Object>(2);
+		    map.put("result", true);
+		    answer = Msg.answer(node.getSelf(), MsgTag.OK, map, msg);
+		} else {
+			answer = errorAnswer(msg, "no_db");
+		}
+		return answer;
+	}
+
+	// http://bit.ly/Q3Zk9s
+	boolean deleteRecursively(final File file) {
+	    if (file.exists()) {
+	        final File[] files = file.listFiles();
+	        for (int i = 0; i < files.length; i++) {
+	            if (files[i].isDirectory()) {
+	                deleteRecursively(files[i]);
+	            }
+	            else {
+	                files[i].delete();
+	            }
+	        }
+	    }
+	    return (file.delete());
 	}
 
 	@Override
