@@ -21,7 +21,7 @@
 
 % public interface
 -export([send/2, call/2, call/3, callback/3, add_listener/1, ping/0, restart_peer/0]).
--export([start/0, start/1, start/2, start_link/0, start_link/1, start_link/2, stop/0]).
+-export([start_link/0, start_link/1, start_link/2, stop/0]).
 
 % gen_server exports
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2, code_change/3]).
@@ -55,15 +55,6 @@
             }).
 
 %% ------ PUBLIC -----
-
-start() ->
-    start(?DEFAULT_N).
-
-start(N) ->
-    gen_server:start(?STARTSPEC, ?MODULE, #ej{n=N}, []).
-
-start(N,Bindir) ->
-    gen_server:start(?STARTSPEC, ?MODULE, #ej{n=N,bindir=Bindir}, []).
 
 start_link() ->
     start_link(?DEFAULT_N).
@@ -448,7 +439,7 @@ bad() ->
 %% ------ TESTS ------
 
 start_stop_test() ->
-    {ok,Pid} = start(2,"../bin"),
+    {ok,Pid} = start_link(2,"../bin"),
     timer:sleep(500),
     ?assert(is_pid(Pid)),
     stop(),
