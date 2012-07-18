@@ -37,7 +37,7 @@
         ,order/0
         ,size/0
         ,types/0
-        ,scortch/0
+        ,scorch/0
         ]).
 
 -author("Ingo Schramm").
@@ -252,10 +252,12 @@ types() ->
     private_info(types).
 
 % @doc wipe the database clean, off the file system, and start from scratch
-scortch() ->
-    case ej_srv:call(?TAG_CALL, [?HANDLER,{call,scortch}]) of
-        {ok,[{result,true}]} -> ok;
-        _Any                 -> error
+scorch() ->
+    case ej_srv:call(?TAG_CALL, [{call, scorch}]) of
+        {ok,[{result,"scorched"}]} ->
+            start(); % do a {call, init} again for clean start
+        _Any ->
+            error
     end.
 
 

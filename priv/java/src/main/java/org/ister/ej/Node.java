@@ -57,6 +57,7 @@ public class Node implements Runnable {
 	 * mostly for testing
 	 */
 	public Node() throws IOException {
+		log = Logger.getLogger(this.getClass());
 		this.peernode = "";
 		this.nodename = "";
 		this.mboxname = "";
@@ -191,9 +192,13 @@ public class Node implements Runnable {
 	 * @return
 	 */
 	public OtpErlangPid getSelf() {
-		return this.mbox.self();
+		return this.self;
 	}
 
+	// for testing only
+	public void setSelf(OtpErlangPid self) {
+		this.self = self;
+	}
 
     /* PRIVATE */
 

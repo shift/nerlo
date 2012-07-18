@@ -16,55 +16,55 @@ import org.apache.log4j.PropertyConfigurator;
  */
 public class Main {
 
-	private final String[] args;
-	private String bindir = ".";
-	private String sname  = "jnode";
-	private String cookie = "123456";
-	private String peer   = "shell";
-	private String handlerClass = "org.ister.ej.SimpleMsgHandler";
-	private String propf  = bindir + "/properties";
+    private final String[] args;
+    private String bindir = ".";
+    private String sname  = "jnode";
+    private String cookie = "123456";
+    private String peer   = "shell";
+    private String handlerClass = "org.ister.ej.SimpleMsgHandler";
+    private String propf  = bindir + "/properties";
 
-	private static Node NODE = null;
-	private static Properties PROPERTIES = null;
+    private static Node NODE = null;
+    private static Properties PROPERTIES = null;
 
-	private static final String VERSION = "0.2.0-alpha";
-	private static final String NAME = "nerlo";
+    private static final String VERSION = "0.2.0-alpha";
+    private static final String NAME = "nerlo";
 
-	private static Logger log;
+    private static Logger log;
 
-	private Main(String[] args) {
-		log = Logger.getLogger(this.getClass());
-		log.debug("args:");
-		log.debug(args);
-		this.args = args;
-	}
+    protected Main(String[] args) {
+        log = Logger.getLogger(this.getClass());
+        log.debug("args:");
+        log.debug(args);
+        this.args = args;
+    }
 
-	/**
-	 * Run the program.
-	 *
-	 * @throws Exception
-	 */
-	public void run() throws Exception {
-		parseOptions(this.args);
-	    initProps(this.propf);
-	    log.debug("propf: " + this.propf);
-	    log.info("---- Main initialized");
-	    NODE = Node.getInstance(sname, peer, PROPERTIES);
-	    new Thread(NODE).start();
-	}
+    /**
+     * Run the program.
+     *
+     * @throws Exception
+     */
+    public void run() throws Exception {
+        parseOptions(this.args);
+        initProps(this.propf);
+        log.debug("propf: " + this.propf);
+        log.info("---- Main initialized");
+        NODE = Node.getInstance(sname, peer, PROPERTIES);
+        new Thread(NODE).start();
+    }
 
-	private void parseOptions(String[] args) {
-	    CommandLineParser parser = new GnuParser();
-	    try {
-	        Options options = getOptions();
-	        CommandLine line = parser.parse( options, args );
-	        processCommandLine(line, options);
-	    } catch( ParseException e ) {
-	        System.out.println( "Parsing command line failed.  Reason: " + e.getMessage() );
-	    }
-	}
+    private void parseOptions(String[] args) {
+        CommandLineParser parser = new GnuParser();
+        try {
+            Options options = getOptions();
+            CommandLine line = parser.parse( options, args );
+            processCommandLine(line, options);
+        } catch( ParseException e ) {
+            System.out.println( "Parsing command line failed.  Reason: " + e.getMessage() );
+        }
+    }
 
-	private void processCommandLine(CommandLine line, Options options) {
+    private void processCommandLine(CommandLine line, Options options) {
         if (line.hasOption("help")) {
             HelpFormatter formatter = new HelpFormatter();
             printBanner();
@@ -90,96 +90,96 @@ public class Main {
         if (line.hasOption("handlerClass")) {
             this.handlerClass = line.getOptionValue("handlerClass");
         }
-	}
+    }
 
-	private void printBanner() {
-	    System.out.println(NAME + " version " + VERSION);
-	}
+    private void printBanner() {
+        System.out.println(NAME + " version " + VERSION);
+    }
 
-	@SuppressWarnings("static-access")
+    @SuppressWarnings("static-access")
     private Options getOptions() {
 
-	    Option help = new Option("help", "print this message");
-	    Option version = new Option("version", "print the version information and exit");
-	    Option sname = OptionBuilder.withArgName("sname")
+        Option help = new Option("help", "print this message");
+        Option version = new Option("version", "print the version information and exit");
+        Option sname = OptionBuilder.withArgName("sname")
                     .hasArg()
                     .withDescription("give short name of Java node")
                     .create("sname");
-	    Option cookie = OptionBuilder.withArgName("cookie")
+        Option cookie = OptionBuilder.withArgName("cookie")
                     .hasArg()
                     .withDescription("Erlang cookie")
                     .create("cookie");
-	    Option peer = OptionBuilder.withArgName("peer")
+        Option peer = OptionBuilder.withArgName("peer")
                     .hasArg()
                     .withDescription("give short name of Erlang node")
                     .create("peer");
-	    Option propf = OptionBuilder.withArgName("properties")
-        			.hasArg()
-			        .withDescription("give path to properties file")
-			        .create("ps");
-	    Option hdClass = OptionBuilder.withArgName("handlerClass")
-					.hasArg()
-			        .withDescription("give class of message handler")
-			        .create("handlerClass");
+        Option propf = OptionBuilder.withArgName("properties")
+                    .hasArg()
+                    .withDescription("give path to properties file")
+                    .create("ps");
+        Option hdClass = OptionBuilder.withArgName("handlerClass")
+                    .hasArg()
+                    .withDescription("give class of message handler")
+                    .create("handlerClass");
 
-	    Options options = new Options();
-	    options.addOption(help);
-	    options.addOption(version);
-	    options.addOption(sname);
-	    options.addOption(cookie);
-	    options.addOption(peer);
-	    options.addOption(propf);
-	    options.addOption(hdClass);
-	    return options;
-	}
+        Options options = new Options();
+        options.addOption(help);
+        options.addOption(version);
+        options.addOption(sname);
+        options.addOption(cookie);
+        options.addOption(peer);
+        options.addOption(propf);
+        options.addOption(hdClass);
+        return options;
+    }
 
-	private void initProps(String path) throws IOException {
-		PROPERTIES = new Properties();
-		try {
-			FileInputStream stream = new FileInputStream(path);
-			PROPERTIES.load(stream);
-			PropertyConfigurator.configure(PROPERTIES);
-			stream.close();
-		} catch (FileNotFoundException e) {
-			System.out.println("ERROR: properties file not found at " + path);
-		} finally {
-			if (PROPERTIES.getProperty("ej.cookie") == null) {
-				PROPERTIES.setProperty("ej.cookie", this.cookie);
-			}
-			if (PROPERTIES.getProperty("ej.msgHandler") == null) {
-				PROPERTIES.setProperty("ej.msgHandler", this.handlerClass);
-			}
-		}
-	}
+    private void initProps(String path) throws IOException {
+        PROPERTIES = new Properties();
+        try {
+            FileInputStream stream = new FileInputStream(path);
+            PROPERTIES.load(stream);
+            PropertyConfigurator.configure(PROPERTIES);
+            stream.close();
+        } catch (FileNotFoundException e) {
+            System.out.println("ERROR: properties file not found at " + path);
+        } finally {
+            if (PROPERTIES.getProperty("ej.cookie") == null) {
+                PROPERTIES.setProperty("ej.cookie", this.cookie);
+            }
+            if (PROPERTIES.getProperty("ej.msgHandler") == null) {
+                PROPERTIES.setProperty("ej.msgHandler", this.handlerClass);
+            }
+        }
+    }
 
-	/**
-	 *
-	 * @return
-	 * @throws IllegalStateException
-	 */
-	public static Node getJNode() throws IllegalStateException {
-		if (NODE == null) {
-			throw new IllegalStateException("JNode not initialized");
-		}
-		return NODE;
-	}
+    /**
+     *
+     * @return
+     * @throws IllegalStateException
+     */
+    public static Node getJNode() throws IllegalStateException {
+        if (NODE == null) {
+            throw new IllegalStateException("JNode not initialized");
+        }
+        return NODE;
+    }
 
-	/**
-	 *
-	 * @param key
-	 * @param def
-	 * @return
-	 */
-	public static String getProperty(String key, String def) {
-		return getProperty(PROPERTIES, key, def);
-	}
+    /**
+     *
+     * @param key
+     * @param def
+     * @return
+     */
+    public static String getProperty(String key, String def) {
+        return getProperty(PROPERTIES, key, def);
+    }
 
-	public static String getProperty(Properties props, String key, String def) {
-		if (props == null) {
-			throw new IllegalStateException("Properties not initialized");
-		}
-		return props.getProperty(key, def);
-	}
+    public static String getProperty(Properties props, String key, String def) {
+        if (props == null) {
+            throw new IllegalStateException("Properties not initialized");
+        }
+        return props.getProperty(key, def);
+    }
 
 
     /**
@@ -188,17 +188,17 @@ public class Main {
      * @return
      */
     public static Logger getLogger() {
-    	return log;
+        return log;
     }
 
-	/* MAIN */
+    /* MAIN */
 
-	/**
-	 * Main
-	 */
+    /**
+     * Main
+     */
     public static void main(String[] args) throws Exception {
-    	Main main = new Main(args);
-    	main.run();
+        Main main = new Main(args);
+        main.run();
     }
 
 
