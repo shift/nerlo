@@ -219,11 +219,13 @@ index_get_vertex(Name, Key, Val) ->
                        nerlo_util:to_list(Key),
                        nerlo_util:to_list(Val)) of
         Error = {error, _} -> Error;
-        Id when is_integer(Id) -> ?VERTEX(Id);
+        Id when is_integer(Id) -> {ok, ?VERTEX(Id)};
         [First | _] = All ->
-            ej_log:warn("multiple vertices found in index: ~p.  Returning first",
-                        [All]),
-            ?VERTEX(First);
+            ej_log:warn("multiple vertices found in index: ~p. "
+                        "Returning first", [All]),
+            {ok, ?VERTEX(First)};
+        [] -> {error, not_found};
+        ok -> {error, not_found};
         Result -> {error, bad_index_get_vertex, Result}
     end.
 
