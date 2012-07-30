@@ -1,3 +1,4 @@
+
 %% @doc This is the Erlang API of the graph database.
 %%
 %% @author Ingo Schramm
@@ -80,7 +81,7 @@ add_vertex() ->
         {ok, Data} ->
             case lists:keyfind(result,1,Data) of
                 false          -> {error, answer_has_no_id};
-                {result,Value} -> ?VERTEX(Value)
+                {result,Value} -> {ok, ?VERTEX(Value)}
             end;
         Error -> Error
     end.
@@ -121,8 +122,8 @@ vertex_get_neighbourhood(V=?VERTEX(Id), Type) ->
     get_other_nodes(Id,vertex_get_edges(V, Type)).
 
 % @doc Set a property at a vertex.
-vertex_set_property(V, Key, Val) when not is_atom(Key) ->
-    vertex_set_property(V, nerlo_util:to_atom(Key), Val);
+vertex_set_property(V, Key, Val) when not is_list(Key) ->
+    vertex_set_property(V, nerlo_util:to_list(Key), Val);
 vertex_set_property(V, Key, Val) when not is_list(Val) ->
     vertex_set_property(V, Key, nerlo_util:to_list(Key));
 vertex_set_property(?VERTEX(Id), Key, Val) ->
@@ -264,11 +265,12 @@ scorch() ->
 %% ----- PRIVATE ------
 
 private_add_edge(?VERTEX(A), ?VERTEX(B), Type) ->
-    case ej_srv:call(?TAG_CALL, [?HANDLER,{call,add_edge},{a,A},{b,B},{type,Type}]) of
+    case ej_srv:call(?TAG_CALL,
+                     [?HANDLER,{call,add_edge},{a,A},{b,B},{type,Type}]) of
         {ok, Data} ->
             case lists:keyfind(result,1,Data) of
                 false          -> {error, answer_has_no_id};
-                {result,Value} -> ?EDGE(Value,Type,A,B)
+                {result,Value} -> {ok, ?EDGE(Value,Type,A,B)}
             end;
         Error -> Error
     end.
@@ -303,7 +305,7 @@ private_get_property(Type, Id, Key) ->
         {ok, Data} ->
             case lists:keyfind(result,1,Data) of
                 false          -> {error, answer_has_no_result};
-                {result,Value} -> Value
+                {result,Value} -> {ok, Value}
             end;
         Error   -> Error
     end.
@@ -316,7 +318,7 @@ private_get_properties(Type, Id) ->
         {ok, Data} ->
             case lists:keyfind(result,1,Data) of
                 false          -> {error, answer_has_no_result};
-                {result,Value} -> Value
+                {result,Value} -> {ok, Value}
             end;
         Error   -> Error
     end.
@@ -326,7 +328,7 @@ private_info(Item) ->
         {ok, Data} ->
             case lists:keyfind(result,1,Data) of
                 false          -> {error, answer_has_no_id};
-                {result,Value} -> Value
+                {result,Value} -> {ok, Value}
             end;
         Error -> Error
     end.
