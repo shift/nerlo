@@ -35,6 +35,10 @@
         ,index_del_vertex_prop/4
         ,index_get_vertex/3
         ,index_query_vertex/2
+        ,index_add_edge_prop/4
+        ,index_del_edge_prop/4
+        ,index_get_edge/3
+        ,index_query_edge/2
         ,order/0
         ,size/0
         ,types/0
@@ -230,14 +234,46 @@ index_get_vertex(Name, Key, Val) ->
         Result -> {error, bad_index_get_vertex, Result}
     end.
 
-%% TODO: index_add_edge and family
-%%       Type = 'edge'
-
+% @doc Query vertices in the index.
 index_query_vertex(Name, Query) ->
     case private_index('query', node, Name, -1, '', Query) of
         Error = {error, _} -> Error;
         Results when is_list(Results) -> Results;
         Result -> {error, bad_index_query_vertex, Result}
+    end.
+
+% @doc Add an edge k/v pair to the index.
+index_add_edge_prop(?EDGE(Id,_,_,_), Name, Key, Val) ->
+    private_index(add, node, Name, Id,
+                  nerlo_util:to_list(Key),
+                  nerlo_util:to_list(Val)).
+
+% @doc Remove an edge k/v pair from the index.
+index_del_edge_prop(?EDGE(Id,_,_,_), Name, Key, Val) ->
+    private_index(del, edge, Name, Id, Key, Val).
+
+% @doc Lookup an edge in the index.
+index_get_edge(Name, Key, Val) ->
+    case private_index(lookup, edge, Name, -1,
+                       nerlo_util:to_list(Key),
+                       nerlo_util:to_list(Val)) of
+        Error = {error, _} -> Error;
+        ?EDGE(Id,_,_,_) = Edge  when is_integer(Id) -> {ok, Edge};
+        [First | _] = All ->
+            ej_log:warn("multiple edges found in index: ~p. "
+                        "Returning first", [All]),
+            {ok, First};
+        [] -> {error, not_found};
+        ok -> {error, not_found};
+        Result -> {error, bad_index_get_edge, Result}
+    end.
+
+% @doc Query edges in the index.
+index_query_edge(Name, Query) ->
+    case private_index('query', edge, Name, -1, '', Query) of
+        Error = {error, _} -> Error;
+        Results when is_list(Results) -> Results;
+        Result -> {error, bad_index_query_edge, Result}
     end.
 
 % @doc Determine the order of the graph, the number of vertices.
