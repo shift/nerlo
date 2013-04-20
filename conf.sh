@@ -73,34 +73,6 @@ fi
 echo "found Ant at $ANT"
 #export ANT
 
-echo "checking Java dependencies"
-# OtpErlang.jar
-OTPERLANGJAR=`ls $ERL_HOME/lib/erlang/lib/jinterface*/priv/OtpErlang.jar`
-if [ $? -gt 0 ]; then
-    echo "ERROR: OtpErlang.jar not found"
-    echo "------ your Erlang distribution may not be properly installed"
-    exit 1
-fi
-echo "found $OTPERLANGJAR"
-if [ -f $JAVA_LIB/OtpErlang.jar ]; then
-    echo "found $JAVA_LIB/OtpErlang.jar"
-else
-    echo "copy to $JAVA_LIB"
-    cp $OTPERLANGJAR $JAVA_LIB
-fi
-
-DEPS=`cat $JAVA_LIB/DEPENDENCIES`
-for DEP in $DEPS
-do
-    if [ -f $JAVA_LIB/$DEP ]; then
-        echo "found $JAVA_LIB/$DEP" 
-    else
-        echo "ERROR: not found $JAVA_LIB/$DEP"
-        echo "------ please copy $DEP into $JAVA_LIB and try again"
-        exit 1
-    fi
-done
-
 echo "checking Erlang dependencies"
 EDEPS=`cat $ERL_LIB/DEPENDENCIES`
 for DEP in $EDEPS
