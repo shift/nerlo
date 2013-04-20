@@ -10,7 +10,7 @@ export ERL_HOME
 export JAVA_HOME
 
 JAVA=${JAVA_HOME}/bin/java
-JAR=${SCRIPT_DIR}/../../java/dist/nerlo.jar
+JAR=${SCRIPT_DIR}/../../java/target/ej-1.0-SNAPSHOT-jar-with-dependencies.jar
 
 ${ERL_HOME}/bin/epmd -daemon
 
