@@ -1,0 +1,38 @@
+OVERVIEW
+--------
+
+With "nerlo" you get an Erlang bridge to the neo4j graph database.
+
+
+DEPENDENCIES
+------------
+
+JDK >= 1.6.0
+Erlang >= R13B04
+GNU make
+Maven >= 3
+
+Make sure 'erl', 'epmd' are on your $PATH, and $JAVA_HOME is set properly.
+
+
+BUILD
+-----
+
+You may try to build from source like this:
+
+$ make
+
+
+RUN
+---
+
+$ bin/shell
+
+erl 1> application:start(nerlo).
+erl 2> ej_srv:ping().
+erl 3> neo4j:has_db().
+erl 4> V1 = neo4j:add_vertex().
+erl 5> V2 = neo4j:add_vertex().
+erl 6> E1 = neo4j:add_edge(V1,V2).
+[...]
+erl 999> application:stop(nerlo).

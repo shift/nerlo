@@ -1,1 +1,11 @@
+.shell_history
+.DS_Store
+db
+deps
+ebin
+*.beam
+*.app
+.eunit
 conf.cache
+log
+erl_crash.dump

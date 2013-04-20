@@ -1,0 +1,8 @@
+.project
+.classpath
+<<<<<<< HEAD:java/.gitignore
+target/*
+=======
+.settings
+target
+>>>>>>> e14dfb5c99a8c335c768eb5983ba0f1f08bf650f:priv/java/.gitignore
