@@ -1,6 +1,6 @@
 package org.ister.nerlo;
 
-import java.util.concurrent.*;
+import java.util.concurrent.Callable;
 
 /**
  * 

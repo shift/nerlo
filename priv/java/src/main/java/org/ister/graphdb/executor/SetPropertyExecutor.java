@@ -13,7 +13,7 @@ public class SetPropertyExecutor extends AbstractGraphdbMsgExecutor {
 
 	private final static String VERTEX = "vertex";
 	private final static String EDGE = "edge";
-
+	
 	@Override
 	protected boolean checkMsg(Msg msg) {
 		return (msg.has("id") && msg.has("type") && msg.has("key") && msg.has("value"));
@@ -24,7 +24,7 @@ public class SetPropertyExecutor extends AbstractGraphdbMsgExecutor {
 		if (set((String)msg.get("type"), (Long) msg.get("id"), (String)msg.get("key"), msg.get("value"))) {
 			Map<String, Object> map = new HashMap<String, Object>(1);
 			map.put("result", "ok");
-			return Msg.answer(self, MsgTag.OK, map, msg);
+			return Msg.answer(node.getSelf(), MsgTag.OK, map, msg);
 		} else {
 			throw new ExecutorException("could_not_set_property");
 		}
@@ -34,7 +34,7 @@ public class SetPropertyExecutor extends AbstractGraphdbMsgExecutor {
 	protected String getId() {
 		return "set_property";
 	}
-
+	
 	private boolean set(String type, Long id, String name, Object value) {
 		boolean success = false;
 		Transaction tx = this.db.beginTx();

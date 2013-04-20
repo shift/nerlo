@@ -16,28 +16,28 @@ import com.ericsson.otp.erlang.OtpErlangTuple;
 
 /**
  * Transform from OtpErlangObject to Java object and vice versa.
- *
+ * 
  * @author ingo
  *
  */
 public class ErlangTransformer {
 
 	/**
-	 * String becomes string.
+	 * String becomes atom.
 	 * byte[] becomes binary.
 	 * Integer becomes int.
 	 * Long becomes int.
 	 * Double becomes float.
 	 * EjList, ArrayList becomes list.
 	 * EjMap, TreeMap becomes tuple; Integer keys meaning position.
-	 *
+	 * 
 	 * @param o
 	 * @return
 	 */
 	public OtpErlangObject fromJava(Object o) throws IllegalArgumentException {
-
+		
 		if (o instanceof String) {
-			return new OtpErlangString((String) o);
+			return new OtpErlangAtom((String) o);
 		} else if (o instanceof Boolean) {
 			return (o == Boolean.TRUE) ? new OtpErlangAtom("true") : new OtpErlangAtom("false");
 		} else if (o instanceof byte[]) {
@@ -45,7 +45,7 @@ public class ErlangTransformer {
 		} else if (o instanceof Integer) {
 			return new OtpErlangInt(((Integer) o).intValue());
 		} else if (o instanceof Long) {
-			return new OtpErlangLong(((Long) o).longValue());
+			return new OtpErlangInt(((Long) o).intValue());
 		} else if (o instanceof Double) {
 			return new OtpErlangDouble(((Double) o).doubleValue());
 		} else if ((o instanceof EjList) || (o instanceof List<?>)) {
@@ -65,10 +65,10 @@ public class ErlangTransformer {
 			}
 			return new OtpErlangTuple(seed);
 		}
-
+		
 		throw new IllegalArgumentException("cannot transform input class: " + o.getClass().getName());
 	}
-
+	
 	/**
 	 * Atom becomes String.
 	 * Binary becomes byte[].
@@ -76,12 +76,12 @@ public class ErlangTransformer {
 	 * Float becomes Double.
 	 * List becomes EjList.
 	 * Tuple becomes EjMap, key=position.
-	 *
+	 * 
 	 * Note: Since it seems not to be safe to distinguish
 	 * Strings from Lists we do not allow Strings. A String
 	 * will be handled as a List. Send Strings as Atoms or
 	 * Binaries.
-	 *
+	 * 
 	 * @param o
 	 * @return
 	 * @throws IllegalArgumentException
@@ -99,11 +99,11 @@ public class ErlangTransformer {
 		}  else if (o instanceof OtpErlangInt) {
 			return ((OtpErlangInt) o).longValue();
 		} else if (o instanceof OtpErlangLong) {
-			return ((OtpErlangLong) o).longValue();
+			return ((OtpErlangLong) o).longValue();	
 		} else if (o instanceof OtpErlangDouble) {
 			return ((OtpErlangDouble) o).doubleValue();
 		} else if (o instanceof OtpErlangString) {
-			return ((OtpErlangString) o).stringValue();
+			return toJava(new OtpErlangList(((OtpErlangString) o).stringValue()));
 		} else if (o instanceof OtpErlangList) {
 			EjList list = new EjListImpl(((OtpErlangList) o).arity());
 			for (OtpErlangObject x : ((OtpErlangList) o).elements()) {
@@ -118,8 +118,8 @@ public class ErlangTransformer {
 			}
 			return tuple;
 		}
-
+		
 		throw new IllegalArgumentException("cannot transform input class: " + o.getClass().getName());
 	}
-
+	
 }

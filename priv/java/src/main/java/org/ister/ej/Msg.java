@@ -1,5 +1,5 @@
 /**
- *
+ * 
  */
 package org.ister.ej;
 
@@ -7,15 +7,18 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
-
-import com.ericsson.otp.erlang.*;
+import com.ericsson.otp.erlang.OtpErlangAtom;
+import com.ericsson.otp.erlang.OtpErlangList;
+import com.ericsson.otp.erlang.OtpErlangObject;
+import com.ericsson.otp.erlang.OtpErlangPid;
+import com.ericsson.otp.erlang.OtpErlangTuple;
 
 /**
  * A java representation of a specific Erlang message.
- *
+ * 
  * This message has a well defined format. Construction
- * fails if the format is broken.
- *
+ * fails if the format is broken. 
+ * 
  * EJMSG := {FROM, REF, {MSG}}
  * FROM  := Pid
  * REF   := {Pid,Ref}
@@ -25,7 +28,7 @@ import com.ericsson.otp.erlang.*;
  * PART  := {KEY,VALUE}
  * KEY   := Atom
  * VALUE := Atom | Binary | Int | Float | List
- *
+ * 
  * @author ingo
  *
  */
@@ -35,12 +38,12 @@ public class Msg {
 	private final MsgRef ref;
 	private final OtpErlangTuple msg;
 	private final Map<String, Object> map;
-
+	
 	private volatile int hashCode = 0;
-
+	
 	/**
 	 * Create message to send.
-	 *
+	 * 
 	 * @param pid
 	 * @param tuple
 	 */
@@ -50,29 +53,29 @@ public class Msg {
 		this.msg  = (OtpErlangTuple) tuple.clone();
 		this.map  = toMap();
 	}
-
+	
 	/**
 	 * Create from received message.
-	 *
+	 * 
 	 * @param tuple
 	 * @throws IllegalArgumentException
 	 */
 	public Msg(OtpErlangTuple tuple) throws IllegalArgumentException {
-
+		
 		if (tuple.arity() != 3) {
 			throw new IllegalArgumentException("message has wrong arity");
 		}
-
+		
 		OtpErlangTuple t = (OtpErlangTuple) tuple.clone();
 		this.from = getFrom(t);
 		this.ref  = getRef(t);
 		this.msg  = getMsg(t);
 		this.map  = toMap();
 	}
-
-
+	
+	
 	/**
-	 * This is for matching a tuple element of the message
+	 * This is for matching a tuple element of the message 
 	 * with a match spec.
 	 *
 	 * @param pos
@@ -87,10 +90,10 @@ public class Msg {
         }
 		return false;
 	}
-
+	
 	/**
 	 * Match a key value pair i the message.
-	 *
+	 * 
 	 * @param key
 	 * @param value
 	 * @return
@@ -101,74 +104,74 @@ public class Msg {
 		}
 		return value.equals(map.get(key));
 	}
-
+	
 	/**
 	 * Check if key is set in the mesage.
-	 *
+	 * 
 	 * @param key
 	 * @return
 	 */
 	public boolean has(String key) {
 		return map.containsKey(key);
 	}
-
+	
 	/**
 	 * Get the value for key.
-	 *
+	 * 
 	 * @param key
 	 * @return
 	 */
 	public Object get(String key) {
 		return map.get(key);
 	}
-
+	
 	/**
 	 * Get sender Pid of this message.
-	 *
+	 * 
 	 * @return
 	 */
 	public OtpErlangPid getFrom() {
 		return this.from;
 	}
-
+	
 	/**
 	 * Get sender Pid of this message.
-	 *
+	 * 
 	 * @return
 	 */
 	public MsgRef getRef() {
 		return this.ref;
 	}
-
+	
 	/**
 	 * Get sender Pid of this message.
-	 *
+	 * 
 	 * @return
 	 */
 	public OtpErlangTuple getRefTuple() {
 		return this.ref.toTuple();
 	}
-
+	
 	/**
 	 * Get message body of this message.
-	 *
+	 * 
 	 * @return
 	 */
 	public OtpErlangTuple getMsg() {
 		return this.msg;
 	}
-
+	
 	/**
 	 * Get map.
-	 *
+	 * 
 	 * @return
 	 */
 	public Map<String,Object> getMap() {
 		return this.map;
 	}
-
+	
 	/**
-	 *
+	 * 
 	 * @return
 	 * @throws IllegalArgumentException
 	 */
@@ -179,10 +182,10 @@ public class Msg {
 		}
 		throw new IllegalArgumentException("message not properly tagged: " + this.msg.toString());
 	}
-
+	
 	/**
 	 * This will always recalculate the map.
-	 *
+	 * 
 	 * @return
 	 */
 	protected Map<String, Object> toMap() throws IllegalArgumentException {
@@ -210,34 +213,34 @@ public class Msg {
 		}
 		return map;
 	}
-
+	
 	/**
 	 * Get message as one single tuple.
-	 *
+	 * 
 	 * @return
 	 */
 	public OtpErlangTuple toTuple() {
 		OtpErlangObject[] l = {this.from, this.ref.toTuple(), this.msg};
 		return new OtpErlangTuple(l);
 	}
-
-
+	
+	
 	/**
 	 * Tuple element at position, starting with 0.
-	 *
+	 * 
 	 * @param i
 	 * @return
 	 */
 	public OtpErlangObject elementAt(int i) {
 		return this.msg.elementAt(i);
 	}
-
+	
 	@Override
 	public String toString() {
 		return toTuple().toString();
 	}
-
-	@Override
+	
+	@Override 
 	public int hashCode() {
 	    int result = hashCode;
 	    if (result == 0) {
@@ -251,60 +254,60 @@ public class Msg {
 	    return result;
 	}
 
-
+	
 	/**
 	 * Factory method to create an immutable JMsg from a HashMap.
-	 *
+	 * 
 	 * @param map
 	 * @param tagstr
 	 * @return
 	 */
 	public static Msg factory(OtpErlangPid self, MsgRef ref, MsgTag msgtag, Map<String, Object> map) {
 		ErlangTransformer trans = new ErlangTransformer();
-
+		
 		OtpErlangObject[] ts = new OtpErlangObject[map.size()];
 		int i = 0;
 		for (String key : map.keySet()) {
-			OtpErlangObject[] l = {new OtpErlangAtom(key), trans.fromJava(map.get(key))};
+			OtpErlangObject[] l = {new OtpErlangAtom(key), trans.fromJava(map.get(key))}; 
 			OtpErlangTuple t = new OtpErlangTuple(l);
 			ts[i++] = t;
 		}
 		OtpErlangList list = new OtpErlangList(ts);
-
+		
 		OtpErlangObject[] tl =  {msgtag.toAtom(),list};
 		OtpErlangTuple msg = new OtpErlangTuple(tl);
 		return new Msg(self, ref, msg);
 	}
-
+	
 	public static Msg answer(OtpErlangPid self, String tag, Map<String, Object> map, Msg request) {
 		return factory(self, request.getRef(), new MsgTag(tag), map);
 	}
-
+	
 	public static Msg fragment(OtpErlangPid self, Map<String, Object> map, Msg request) {
 		return factory(self, request.getRef(), new MsgTag(MsgTag.FRAGMENT), map);
 	}
-
+	
 	public static Msg lastFragment(OtpErlangPid self, Msg request) {
 		Map<String, Object> map = Collections.singletonMap("result", (Object)"EJCALLBACKSTOP");
 		return factory(self, request.getRef(), new MsgTag(MsgTag.OK), map);
 	}
-
+    
 	/* PRIVATE */
-
+	
     private OtpErlangPid getFrom(OtpErlangTuple t) throws IllegalArgumentException {
         if (! (t.elementAt(0) instanceof OtpErlangPid)) {
             throw new IllegalArgumentException("cannot determine From");
         }
         return (OtpErlangPid) (t.elementAt(0));
     }
-
+    
     private MsgRef getRef(OtpErlangTuple t) throws IllegalArgumentException {
         if (! (t.elementAt(1) instanceof OtpErlangTuple)) {
             throw new IllegalArgumentException("cannot determine Ref");
         }
         return new MsgRef((OtpErlangTuple) (t.elementAt(1)));
     }
-
+    
     private OtpErlangTuple getMsg(OtpErlangTuple t) throws IllegalArgumentException {
         if (! (t.elementAt(2) instanceof OtpErlangTuple)) {
             throw new IllegalArgumentException("cannot determine Msg");
@@ -313,6 +316,6 @@ public class Msg {
     }
 
 
-
+    
 }
 

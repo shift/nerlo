@@ -16,7 +16,7 @@ public class GetPropertiesExecutor extends AbstractGraphdbMsgExecutor {
 
 	private final static String VERTEX = "vertex";
 	private final static String EDGE = "edge";
-
+	
 	@Override
 	protected boolean checkMsg(Msg msg) {
 		return (msg.has("id") && msg.has("type"));
@@ -30,14 +30,14 @@ public class GetPropertiesExecutor extends AbstractGraphdbMsgExecutor {
 		}
 		Map<String, Object> map = new HashMap<String, Object>(1);
 		map.put("result", property);
-		return Msg.answer(self, MsgTag.OK, map, msg);
+		return Msg.answer(node.getSelf(), MsgTag.OK, map, msg);
 	}
 
 	@Override
 	protected String getId() {
 		return "get_property";
 	}
-
+	
 	private List<Map<Integer,Object>> get(String type, Long id) throws ExecutorException {
 		ArrayList<Map<Integer,Object>> properties = new ArrayList<Map<Integer,Object>>();
 		Transaction tx = this.db.beginTx();

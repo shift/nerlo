@@ -29,7 +29,7 @@ public class VertexGetEdgesExecutor extends AbstractGraphdbMsgExecutor {
 		} else {
 			Map<String, Object> map = new HashMap<String, Object>(2);
 			map.put("result", rs);
-			return Msg.answer(self, MsgTag.OK, map, msg);
+			return Msg.answer(node.getSelf(), MsgTag.OK, map, msg);
 		}
 	}
 
@@ -37,12 +37,12 @@ public class VertexGetEdgesExecutor extends AbstractGraphdbMsgExecutor {
 	protected String getId() {
 		return "vertex_get_edges";
 	}
-
+	
 	private ArrayList<TreeMap<Integer,Object>> getRelations(Long id) {
 		ArrayList<TreeMap<Integer,Object>> list = null;
-
+		
 		org.neo4j.graphdb.Node vertex = null;
-
+		
 		Transaction tx = this.db.beginTx();
 		try {
 			vertex = this.db.getNodeById(id);
@@ -56,15 +56,15 @@ public class VertexGetEdgesExecutor extends AbstractGraphdbMsgExecutor {
 		} finally {
 			tx.finish();
 		}
-
+		
 		if (vertex == null) {
 			return null;
 		}
-
+		
 		return list;
 	}
-
-
+	
+	
 	private ArrayList<TreeMap<Integer,Object>> getRelations(Node vertex, Direction dir) {
 		ArrayList<TreeMap<Integer,Object>> list = new ArrayList<TreeMap<Integer,Object>>();
 		for (Relationship r : vertex.getRelationships(Direction.BOTH)) {
@@ -72,7 +72,7 @@ public class VertexGetEdgesExecutor extends AbstractGraphdbMsgExecutor {
 		}
 		return list;
 	}
-
+	
 	private TreeMap<Integer,Object> getRelation(Relationship r) {
 		TreeMap<Integer,Object> map = new TreeMap<Integer,Object>();
 		map.put(1, "edge");
@@ -82,6 +82,6 @@ public class VertexGetEdgesExecutor extends AbstractGraphdbMsgExecutor {
 		map.put(5, r.getType().name());
 		return map;
 	}
-
-
+	
+	
 }

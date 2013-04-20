@@ -30,40 +30,28 @@ import com.ericsson.otp.erlang.OtpNode;
  * (shell@host)1> {jnode, 'jnode@host'} ! {self(), {data, [{number,666}]}}.
  * (shell@host)1> {jnode, 'jnode@host'} ! {self(), {call, [{call,die}]}}.
  * </pre>
- *
- * If this has been started canonically from within Erlang with
+ * 
+ * If this has been started canonically from within Erlang with 
  * ej_srv:start() you may send messages using ej_srv:send/2 or ej_srv:call/2,3.
  *
- * @author ingo
+ * @author ingo 
  */
-public class Node implements Runnable {
+public class Node {
 
 	private static Node INSTANCE = null;
-
+	
 	private final String cookie;
 	private final String nodename;
 	private final String mboxname;
 	private final String peernode;
-	private static  Logger log;
+	private final Logger log;
 	private final MsgHandler handler;
-
+	
 	private OtpNode node = null;
 	private OtpMbox mbox = null;
 	private OtpErlangPid self = null;
-
+	
 	private OtpErlangPid peerpid  = null;
-
-	/**
-	 * mostly for testing
-	 */
-	public Node() throws IOException {
-		log = Logger.getLogger(this.getClass());
-		this.peernode = "";
-		this.nodename = "";
-		this.mboxname = "";
-		this.handler  = new SimpleMsgHandler();
-		this.cookie   = "";
-	}
 
 	/**
 	 * Create with custom setup.
@@ -73,32 +61,31 @@ public class Node implements Runnable {
 	 * @param peer
 	 */
 	private Node(String name, String peer, Properties props) throws IOException {
-		log = Logger.getLogger(this.getClass());
-		this.cookie   = Main.getProperty(props, "ej.cookie", null);
-		this.handler  = getHandler(props);
+		this.cookie   = Main.getProperty("ej.cookie", null);
+		this.log      = Main.getLogger();
+		this.handler  = getHandler();
 		this.nodename = name;
 		this.mboxname = name;
 		this.peernode = peer;
-		this.node     = setupNode();
+		this.node     = getNode();
 	}
-
+	
 	/**
 	 * Get instance.
-	 *
+	 * 
 	 * @param cookie
 	 * @param name
 	 * @param peer
 	 * @return
 	 * @throws IOException
 	 */
-	public static Node getInstance(String name, String peer, Properties props)
-			throws IOException {
+	public static Node getInstance(String name, String peer, Properties props)  throws IOException {
 		if (INSTANCE == null) {
 			INSTANCE = new Node(name, peer, props);
 		}
 		return INSTANCE;
 	}
-
+	
 	public static Node getInstance() throws IllegalStateException {
 		if (INSTANCE == null) {
 			throw new IllegalStateException("Node not initialized");
@@ -106,29 +93,20 @@ public class Node implements Runnable {
 		return INSTANCE;
 	}
 
-	public OtpNode getNode() {
-		return node;
-	}
-
 	/**
 	 * Run server loop.
 	 *
 	 * @throws Exception
 	 */
-	public void run() {
-
+	public void run() throws Exception {
+		
 		this.handler.init(this);
-		log.info("handler: " + this.handler.toString());
-
-		try {
-	        if (node.ping(peernode, 2000)) {
-	            log.info(peernode + ": pong.");
-	        } else {
-	            log.warn(peernode + ": pang!");
-	        }
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
+		
+        if (node.ping(peernode, 2000)) {
+            log.info(peernode + ": pong.");
+        } else {
+            log.warn(peernode + ": pang!");
+        }
 
         while (true) {
             try {
@@ -160,23 +138,7 @@ public class Node implements Runnable {
             }
         }
     }
-
-	public void stop() {
-		this.handler.shutdown();
-		this.mbox.exit("shutdown");
-		OtpEpmd.unPublishPort(node);
-
-//		MsgRef ref = new MsgRef(new OtpErlangPid("foo",0,0,0),
-//					            new OtpErlangRef("dummy", 0, 0));
-//		OtpErlangString ok    = new OtpErlangString(MsgTag.OK);
-//		OtpErlangObject[] os  = new OtpErlangObject[2];
-//		os[0] = ok;
-//		os[1] = new OtpErlangList();
-//		OtpErlangTuple payload = new OtpErlangTuple(os);
-//		Msg msg = new Msg(getSelf(), ref, payload);
-//		shutdown(msg, node);
-	}
-
+	
     public void sendPeer(Msg msg) {
     	if (this.peerpid == null) {
     		log.error("cannot send, have no pid of peer");
@@ -186,34 +148,25 @@ public class Node implements Runnable {
     	log.debug("sending to " + this.peerpid + ": " + t.toString());
     	this.mbox.send(this.peerpid, t);
     }
-
+	
 	/**
-	 *
+	 * 
 	 * @return
 	 */
 	public OtpErlangPid getSelf() {
-		return this.self;
+		return this.mbox.self();
 	}
-
-	// for testing only
-	public void setSelf(OtpErlangPid self) {
-		this.self = self;
-	}
-
+    
+    
     /* PRIVATE */
 
-
+	
     private void processMsg(Msg msg) throws Exception {
-//    	OtpErlangPid pid = msg.getFrom();
-		// TODO: why don't these log?
-//    	log.debug("pid.node(): " + pid.node());
-//    	log.debug("peernode  : " + this.peernode);
-    	// TODO: re-enable this and compare the components,
-    	//       or update this.peernode to be more fully qualified
-//    	if (!pid.node().equals(this.peernode)) {
-//    		log.error("message not allowed from: " + pid.toString());
-//    		return;
-//    	}
+    	OtpErlangPid pid = msg.getFrom();
+    	if (!pid.node().equals(this.peernode)) {
+    		log.error("message not allowed from: " + pid.toString());
+    		return;
+    	}
     	MsgTag tag = msg.getTag();
     	if (tag.equals(MsgTag.NODE)) {
     		if        (msg.match("call", "handshake")) {
@@ -229,14 +182,14 @@ public class Node implements Runnable {
     		this.handler.handle(msg);
         }
     }
-
+    
     private void ping(Msg msg) {
     	Map<String, Object> map = new HashMap<String, Object>(1);
         map.put("call", "ping");
         Msg answer = Msg.answer(this.self, MsgTag.OK, map, msg);
         sendPeer(answer);
     }
-
+    
     private void handshake(Msg msg) {
     	this.peerpid = msg.getFrom();
     	log.info("handshake from: " + msg.getFrom().toString());
@@ -249,7 +202,7 @@ public class Node implements Runnable {
     		log.error("sending message failed in handshake: " + e.toString());
     	}
     }
-
+    
     private void shutdown(Msg msg, OtpNode node) {
     	log.info("shutdown request from: " + msg.getFrom().toString());
     	this.handler.shutdown();
@@ -266,9 +219,9 @@ public class Node implements Runnable {
 	        System.exit(0);
     	}
     }
-
-	private MsgHandler getHandler(Properties props) {
-		String className = Main.getProperty(props, "ej.msgHandler", null);
+    
+	private MsgHandler getHandler() {
+		String className = Main.getProperty("ej.msgHandler", null);
 		try {
 			return (MsgHandler) Class.forName(className).newInstance();
 		} catch (InstantiationException e) {
@@ -282,23 +235,19 @@ public class Node implements Runnable {
 			return new SimpleMsgHandler();
 		}
 	}
+    
 
 
-
-    private OtpNode setupNode() throws IOException {
-		log = Logger.getLogger(this.getClass());
+    private OtpNode getNode() throws IOException {
         try {
             OtpNode node = new OtpNode(this.nodename, this.cookie);
-            log.info("node running: " + this.nodename);
+            log.info("node running: " + this.nodename + "@" + java.net.InetAddress.getLocalHost().getHostName());
             log.info("peer: " + this.peernode);
-//            if (OtpEpmd.publishPort(node)) {
-//                log.info("node registered");
-//            } else {
-//                log.warn("node registration failed");
-//                OtpEpmd.unPublishPort(node);
-//                boolean res = OtpEpmd.publishPort(node);
-//                log.debug("retry epmd connect results: " + res);
-//            }
+            if (OtpEpmd.publishPort(node)) {
+                log.info("node registered");
+            } else {
+                log.warn("node registration failed");
+            }
             String[] names = OtpEpmd.lookupNames();
             for (String name: names) {
                 log.debug(name);
@@ -309,7 +258,6 @@ public class Node implements Runnable {
             return node;
         } catch (IOException e) {
             log.fatal("no node\n" + e.toString());
-            e.printStackTrace();
             throw e;
         }
     }

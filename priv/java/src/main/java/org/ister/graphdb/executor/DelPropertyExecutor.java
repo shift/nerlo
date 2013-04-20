@@ -13,7 +13,7 @@ public class DelPropertyExecutor extends AbstractGraphdbMsgExecutor {
 
 	private final static String VERTEX = "vertex";
 	private final static String EDGE = "edge";
-
+	
 	@Override
 	protected boolean checkMsg(Msg msg) {
 		return (msg.has("id") && msg.has("type") && msg.has("key"));
@@ -24,7 +24,7 @@ public class DelPropertyExecutor extends AbstractGraphdbMsgExecutor {
 		if (del((String)msg.get("type"), (Long) msg.get("id"), (String)msg.get("key"))) {
 			Map<String, Object> map = new HashMap<String, Object>(1);
 			map.put("result", "ok");
-			return Msg.answer(self, MsgTag.OK, map, msg);
+			return Msg.answer(node.getSelf(), MsgTag.OK, map, msg);
 		} else {
 			throw new ExecutorException("could_not_del_property");
 		}
@@ -34,7 +34,7 @@ public class DelPropertyExecutor extends AbstractGraphdbMsgExecutor {
 	protected String getId() {
 		return "del_property";
 	}
-
+	
 	private boolean del(String type, Long id, String name) {
 		boolean success = false;
 		Transaction tx = this.db.beginTx();
