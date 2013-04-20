@@ -3,20 +3,14 @@ package org.ister.graphdb.executor;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.apache.log4j.Logger;
-import org.ister.ej.Main;
 import org.ister.ej.Msg;
 import org.ister.ej.MsgTag;
-import org.ister.ej.Node;
 import org.ister.graphdb.Relations;
 import org.ister.nerlo.ExecutorException;
-import org.ister.nerlo.AbstractMsgExecutor;
 import org.neo4j.graphdb.DynamicRelationshipType;
-import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.index.IndexService;
 
 public class AddEdgeExecutor extends AbstractGraphdbMsgExecutor {
 

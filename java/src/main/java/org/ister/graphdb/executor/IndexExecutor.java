@@ -1,7 +1,6 @@
 package org.ister.graphdb.executor;
 
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.Map;
 
 import org.ister.ej.Msg;
@@ -9,7 +8,7 @@ import org.ister.ej.MsgTag;
 import org.ister.nerlo.ExecutorException;
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.index.IndexHits;
+import org.neo4j.graphdb.index.IndexHits;
 
 public class IndexExecutor extends AbstractGraphdbMsgExecutor {
 
@@ -41,7 +40,7 @@ public class IndexExecutor extends AbstractGraphdbMsgExecutor {
 		long id = -1L;
 		Transaction tx = this.db.beginTx();
 		try {
-			IndexHits<org.neo4j.graphdb.Node> hits = this.index.getNodes(key, value);
+			IndexHits<org.neo4j.graphdb.Node> hits = this.index.get(key, value);
 			if (hits.size() < 1) {
 				throw new ExecutorException("no_vertex_found");
 			} else if (hits.size() > 1) {
@@ -66,9 +65,9 @@ public class IndexExecutor extends AbstractGraphdbMsgExecutor {
 		try {
 			org.neo4j.graphdb.Node node = this.db.getNodeById(id.longValue());
 			if (op.equals("add")) {
-				this.index.index(node, Key, Value);
+				this.index.add(node, Key, Value);
 			} else if (op.equals("del")) {
-				this.index.removeIndex(node, Key, Value);
+				this.index.remove(node, Key, Value);
 			}
 			tx.success();
 		} catch (NotFoundException e) {

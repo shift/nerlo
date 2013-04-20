@@ -1,7 +1,6 @@
 package org.ister.graphdb;
 
 import java.util.HashMap;
-
 import java.util.Map;
 import java.util.concurrent.CompletionService;
 import java.util.concurrent.ExecutionException;
@@ -11,20 +10,28 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
 import org.apache.log4j.Logger;
-
 import org.ister.ej.AbstractMsgHandler;
+import org.ister.ej.ConcurrencyUtil;
 import org.ister.ej.Main;
 import org.ister.ej.Msg;
 import org.ister.ej.MsgTag;
 import org.ister.ej.Node;
-import org.ister.ej.ConcurrencyUtil;
-import org.ister.graphdb.executor.*;
-import org.ister.nerlo.Fiber;
-
+import org.ister.graphdb.executor.AbstractGraphdbMsgExecutor;
+import org.ister.graphdb.executor.AddEdgeExecutor;
+import org.ister.graphdb.executor.AddVertexExecutor;
+import org.ister.graphdb.executor.DelEdgeExecutor;
+import org.ister.graphdb.executor.DelPropertyExecutor;
+import org.ister.graphdb.executor.DelVertexExecutor;
+import org.ister.graphdb.executor.GetPropertiesExecutor;
+import org.ister.graphdb.executor.GetPropertyExecutor;
+import org.ister.graphdb.executor.IndexExecutor;
+import org.ister.graphdb.executor.InfoExecutor;
+import org.ister.graphdb.executor.SetPropertyExecutor;
+import org.ister.graphdb.executor.VertexGetEdgesExecutor;
 import org.neo4j.graphdb.GraphDatabaseService;
-import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.index.IndexService;
-import org.neo4j.index.lucene.LuceneIndexService;
+import org.neo4j.graphdb.factory.GraphDatabaseFactory;
+import org.neo4j.graphdb.index.Index;
+import org.neo4j.index.impl.lucene.LuceneIndex;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
 
 public class DbMsgHandler extends AbstractMsgHandler {
@@ -37,11 +44,11 @@ public class DbMsgHandler extends AbstractMsgHandler {
 	
 	private String path = null;
 	private GraphDatabaseService db = null;
-	private IndexService index = null;
 	private final ExecutorService yielder = Executors.newSingleThreadExecutor();
 	
 	private final ExecutorService exec = Executors.newCachedThreadPool();
 	private final CompletionService<Msg> service = new ExecutorCompletionService<Msg>(this.exec);
+	private Index<org.neo4j.graphdb.Node> index;
 	
 	public void init(Node node) {
 		super.init(node);
@@ -186,8 +193,8 @@ public class DbMsgHandler extends AbstractMsgHandler {
 	
 	private boolean runDbInit(String path) {
 		try {
-			this.db = new EmbeddedGraphDatabase(path);
-			this.index = new LuceneIndexService(this.db);
+			this.db = new GraphDatabaseFactory().newEmbeddedDatabase( path );
+	        this.index = this.db.index().forNodes( "nodes" );
 			log.info("graph database initialized: " + path);
 		} catch (Exception e) {
 			log.error("initialization of database failed: " + e.toString());
@@ -197,10 +204,6 @@ public class DbMsgHandler extends AbstractMsgHandler {
 	}
 	
 	private void dbShutdown() {
-		if (this.index instanceof IndexService) {
-			this.index.shutdown();
-			this.index = null;
-		}
 		if (this.db instanceof GraphDatabaseService) {
 			this.db.shutdown();
 			this.db = null;

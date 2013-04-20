@@ -1,13 +1,17 @@
 package org.ister.ej;
 
-import java.util.ArrayList;
-import java.util.Map;
-import java.util.TreeMap;
 import java.util.List;
+import java.util.TreeMap;
 
-import org.apache.log4j.Logger;
-
-import com.ericsson.otp.erlang.*;
+import com.ericsson.otp.erlang.OtpErlangAtom;
+import com.ericsson.otp.erlang.OtpErlangBinary;
+import com.ericsson.otp.erlang.OtpErlangDouble;
+import com.ericsson.otp.erlang.OtpErlangInt;
+import com.ericsson.otp.erlang.OtpErlangList;
+import com.ericsson.otp.erlang.OtpErlangLong;
+import com.ericsson.otp.erlang.OtpErlangObject;
+import com.ericsson.otp.erlang.OtpErlangString;
+import com.ericsson.otp.erlang.OtpErlangTuple;
 
 
 /**
